@@ -1,0 +1,17 @@
+%YAML 1.2
+---
+
+imports:
+  - resource: secret_parameters.yml
+
+
+app:
+  sid: istex-exchange
+istex:
+  api:
+    url: %env(ISTEX_EXCHANGE_API_URL)%
+  data:
+    url: %env(ISTEX_EXCHANGE_DATA_URL)%
+
+nodejs:
+  stackTraceLimit: 40
