@@ -10,8 +10,10 @@ app:
 istex:
   api:
     url: %env(ISTEX_EXCHANGE_API_URL)%
+    timeout: 10000 # ms
   data:
     url: %env(ISTEX_EXCHANGE_DATA_URL)%
+    responseTimeout: 5000 #ms
 
 nodejs:
   stackTraceLimit: 40

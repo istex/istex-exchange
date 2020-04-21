@@ -4,8 +4,10 @@
   "description": "Helpers and nodeJs core module to stream Data Istex Objects into kbart or xml holdings",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "export NODE_ENV=production; view-config; node index.js --no-colors",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "export NODE_ENV=development; view-config; node index.js",
+    "config:view": "view-config"
   },
   "keywords": [
     "ISTEX",
@@ -23,6 +25,7 @@
     "lodash": "^4.17.15",
     "make-fetch-happen": "^7.1.1",
     "request": "^2.88.0",
-    "stream-json": "^1.3.3"
+    "stream-json": "^1.3.3",
+    "verror": "^1.10.0"
   }
 }
