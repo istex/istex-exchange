@@ -6,7 +6,6 @@ const {istex, nodejs, app}            = require('config-component').get(module),
       _                               = require('lodash'),
       path                            = require('path'),
       {parser}                        = require('stream-json'),
-      {streamValues}                  = require('stream-json/streamers/StreamValues'),
       {streamArray}                   = require('stream-json/streamers/StreamArray'),
       {pick}                          = require('stream-json/filters/Pick'),
       {URL, URLSearchParams}          = require('url'),
@@ -67,13 +66,14 @@ function getSearchOptions () {
     }
   };
 }
+
 const client     = got.extend(getSearchOptions()),
       dataClient = client.extend({timeout: {response: istex.data.responseTimeout}}),
       apiClient  = client.extend({timeout: istex.api.timeout});
 
 const dataUrl = new URL('api/run/all-documents', istex.data.url);
 //dataUrl.searchParams.set(model.type, MONOGRAPH);
-//dataUrl.searchParams.set('uri', 'ark:/67375/8Q1-01098048-D');
+//dataUrl.searchParams.set('uri', 'ark:/67375/8Q1-3DMK8QH9-F');
 //dataUrl.searchParams.set(model.title,'Journal of the Chemical Society D: Chemical Communications');
 //dataUrl.searchParams.set(model.corpus, 'springer-ebooks');
 dataUrl.searchParams.set('maxSize', 5000);
@@ -92,7 +92,7 @@ hl(dataClient.stream(dataUrl))
   })
   .map(hl.get('value'))
   .map(lodexData => {
-    let apiQuery, requestSize = 1;
+    let apiQuery;
     expectedExchangeObject++;
 
     if (!(apiQuery = lodexData[model.istexQuery])) {
@@ -100,47 +100,54 @@ hl(dataClient.stream(dataUrl))
       return;
     }
 
-
     apiQuery += ` AND publicationDate:[${lodexData[model.startDate] || '*'} TO ${lodexData[model.endDate] || '*'}]`;
-
 
     lodexData._query = apiQuery;
 
-    const apiUrl = new URL('document', istex.api.url);
 
+    const apiUrl = new URL('document', istex.api.url);
     apiUrl.searchParams.set('q', apiQuery);
-    apiUrl.searchParams.set('size', requestSize);
+    apiUrl.searchParams.set('size', 1);
     apiUrl.searchParams.set('output', 'host,publicationDate,author');
     apiUrl.searchParams.set('sid', app.sid);
+    apiUrl.searchParams.set('facet', buildCoverages.issueByVolume);
+
+    const apiSearch = hl(apiClient.get(apiUrl).json());
 
 
-    apiUrl.searchParams.set('facet', buildCoverages.issueByVolumeQuery);
-
-    let apiSearch =
-          hl(
-            apiClient.get(apiUrl).json()
-          )
-    ;
-
-    // we needs a second request for volume by publicationDate aggregations
+    // we needs a second and third request for multiple aggregations
     // @todo add hadoc route in the api
-    let apiSearchPublicationDateByVolume = hl.of({});
+    const apiUrlHostPublicationDateByVolumeAndIssue = new URL('document', istex.api.url);
+    apiUrlHostPublicationDateByVolumeAndIssue.search = new URLSearchParams(apiUrl.search);
+    apiUrlHostPublicationDateByVolumeAndIssue.searchParams.set('size', 0);
+    apiUrlHostPublicationDateByVolumeAndIssue.searchParams.set('facet',
+                                                               buildCoverages.hostPublicationDateByVolumeAndIssue);
 
-    const apiUrlPublicationDateByVolume = new URL('document', istex.api.url);
-    apiUrlPublicationDateByVolume.search = new URLSearchParams(apiUrl.search);
-    apiUrlPublicationDateByVolume.searchParams.set('size', 0);
-    apiUrlPublicationDateByVolume.searchParams.set('facet', buildCoverages.publicationDateByVolumeQuery);
-    apiSearchPublicationDateByVolume = hl(apiClient.get(apiUrlPublicationDateByVolume).json());
+    const apiSearchHostPublicationDateByVolumeAndIssue = hl(apiClient.get(apiUrlHostPublicationDateByVolumeAndIssue)
+                                                                     .json());
 
-    return hl([apiSearch, apiSearchPublicationDateByVolume, hl([lodexData])])
-      .parallel(3)
-      .batch(3)
+
+    const apiUrlPublicationDateByVolumeAndIssue = new URL('document', istex.api.url);
+    apiUrlPublicationDateByVolumeAndIssue.search = new URLSearchParams(apiUrl.search);
+    apiUrlPublicationDateByVolumeAndIssue.searchParams.set('size', 0);
+    apiUrlPublicationDateByVolumeAndIssue.searchParams.set('facet', buildCoverages.publicationDateByVolumeAndIssue);
+
+    const apiSearchPublicationDateByVolumeAndIssue = hl(apiClient.get(apiUrlPublicationDateByVolumeAndIssue).json());
+
+
+    return hl([apiSearch,
+               apiSearchHostPublicationDateByVolumeAndIssue,
+               apiSearchPublicationDateByVolumeAndIssue,
+               hl([lodexData])])
+      .parallel(4)
+      .batch(4)
       .stopOnError(logWarning)
       ;
   })
   .compact()
-  .parallel(3)
-  .map(([apiResult, apiResultPublicationDateByVolume, lodexData]) => {
+  .parallel(5)
+  .map(([apiResult, apiResultHostPublicationDateByVolumeAndIssue, apiResultPublicationDateByVolumeAndIssue, lodexData]) => {
+
     if (apiResult.total === 0) {
       logWarning(
         `No Istex API result for LODEX data object _id: `
@@ -165,7 +172,9 @@ hl(dataClient.stream(dataUrl))
       logWarning(`Missing Uri in lodexData object id:${lodexData._id}\n`, lodexData);
     }
     const coverages = lodexData[model.type] === 'serial'
-      ? profiledBuildCoverages(apiResult.aggregations, apiResultPublicationDateByVolume.aggregations)
+      ? profiledBuildCoverages(apiResult.aggregations,
+                               apiResultHostPublicationDateByVolumeAndIssue.aggregations,
+                               apiResultPublicationDateByVolumeAndIssue.aggregations)
       : [];
 
     const titleUrl = lodexData.uri && path.join(istex.data.url, lodexData.uri) || '';
@@ -176,12 +185,12 @@ hl(dataClient.stream(dataUrl))
       publication_title              : lodexData[model.title],
       publication_type               : lodexData[model.type],
       coverage_depth                 : 'fulltext',
-      print_identifier               : lodexData[model.issn] || lodexData[model.isbn],
-      online_identifier              : lodexData[model.eIssn] || lodexData[model.eIsbn],
-      date_first_issue_online        : lodexData[model.startDate],
+      print_identifier               : lodexData[model.type] === SERIAL ? lodexData[model.issn] : lodexData[model.isbn],
+      online_identifier              : lodexData[model.type] === SERIAL ? lodexData[model.eIssn] : lodexData[model.eIsbn],
+      date_first_issue_online        : null,
       num_first_vol_online           : null,
       num_first_issue_online         : null,
-      date_last_issue_online         : lodexData[model.endDate],
+      date_last_issue_online         : null,
       num_last_vol_online            : null,
       num_last_issue_online          : null,
       title_url                      : titleUrl,
