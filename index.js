@@ -43,12 +43,15 @@ const SERIAL    = 'serial',
       MONOGRAPH = 'monograph'
 ;
 
+const issnModel            = 'nnnn-nnnn',
+      syndicationFromModel = '/api/run/syndication-from/nC6e';
+
 const startDate = new Date();
 let generatedExchangeObject = 0,
     expectedExchangeObject  = 0
 ;
 
-const profiledBuildCoverages = profile(buildCoverages);
+const _buildCoverages = profile(buildCoverages, app.doProfile);
 
 function getSearchOptions () {
   return {
@@ -72,7 +75,7 @@ const client     = got.extend(getSearchOptions()),
       apiClient  = client.extend({timeout: istex.api.timeout});
 
 const dataUrl = new URL('api/run/all-documents', istex.data.url);
-//dataUrl.searchParams.set(model.type, MONOGRAPH);
+//dataUrl.searchParams.set(model.type, SERIAL);
 //dataUrl.searchParams.set('uri', 'ark:/67375/8Q1-3DMK8QH9-F');
 //dataUrl.searchParams.set(model.title,'Journal of the Chemical Society D: Chemical Communications');
 //dataUrl.searchParams.set(model.corpus, 'springer-ebooks');
@@ -172,9 +175,9 @@ hl(dataClient.stream(dataUrl))
       logWarning(`Missing Uri in lodexData object id:${lodexData._id}\n`, lodexData);
     }
     const coverages = lodexData[model.type] === 'serial'
-      ? profiledBuildCoverages(apiResult.aggregations,
-                               apiResultHostPublicationDateByVolumeAndIssue.aggregations,
-                               apiResultPublicationDateByVolumeAndIssue.aggregations)
+      ? _buildCoverages(apiResult.aggregations,
+                        apiResultHostPublicationDateByVolumeAndIssue.aggregations,
+                        apiResultPublicationDateByVolumeAndIssue.aggregations)
       : [];
 
     const titleUrl = lodexData.uri && path.join(istex.data.url, lodexData.uri) || '';
@@ -187,18 +190,12 @@ hl(dataClient.stream(dataUrl))
       coverage_depth                 : 'fulltext',
       print_identifier               : lodexData[model.type] === SERIAL ? lodexData[model.issn] : lodexData[model.isbn],
       online_identifier              : lodexData[model.type] === SERIAL ? lodexData[model.eIssn] : lodexData[model.eIsbn],
-      date_first_issue_online        : null,
-      num_first_vol_online           : null,
-      num_first_issue_online         : null,
-      date_last_issue_online         : null,
-      num_last_vol_online            : null,
-      num_last_issue_online          : null,
       title_url                      : titleUrl,
       first_author                   : lodexData[model.type] === MONOGRAPH && lodexData[model.contributor] || null,
       title_id                       : lodexData[model.titleId],
-      notes                          : lodexData[model.followedBy],
-      parent_publication_title_id    : lodexData[model.parentPublicationTitleId],
-      preceding_publication_title_id : lodexData[model.precededBy],
+      notes                          : tagFollowedBy(lodexData[model.followedBy]),
+      parent_publication_title_id    : findTitleId(lodexData[model.parentPublicationTitleId]),
+      preceding_publication_title_id : findTitleId(lodexData[model.precededBy]),
       access_type                    : lodexData[model.rights],
       publisher_name                 : lodexData[model.publisher],
       monograph_volume               : _getMonographVolume(lodexData, apiResult),
@@ -207,15 +204,28 @@ hl(dataClient.stream(dataUrl))
     };
   })
   .stopOnError(logError)
+  .compact()
   .tap(hl.log)
+  //.tap((o) => {if (o.notes || o.parent_publication_title_id || o.preceding_publication_title_id) console.dir(o)})
   .done(() => {
-    logInfo(profiledBuildCoverages.report());
+    logInfo(_buildCoverages.report());
     logInfo(`Generated exchange object: ${generatedExchangeObject}/${expectedExchangeObject}`);
     logInfo('start date: ', startDate);
     logInfo('end date: ', new Date());
   })
 
 ;
+
+function tagFollowedBy(value){
+  let titleId;
+  if(!(titleId = findTitleId(value))) return '';
+  return `followed by: ${titleId}`;
+}
+
+function findTitleId (value) {
+  if (typeof value !== 'string' || value === '' || !value.startsWith(syndicationFromModel)) return null;
+  return value.slice(-issnModel.length);
+}
 
 function _getMonographVolume (lodexData, apiResult) {
   if (lodexData[model.type] !== MONOGRAPH) return null;

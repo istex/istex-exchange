@@ -4,8 +4,13 @@ module.exports = profile;
 
 const NS_PER_MS = 1e6;
 
-function profile (fn) {
-if(typeof fn !== 'function') throw new Error('fn must be a FUNCTION');
+function profile (fn, doProfile) {
+  if (typeof fn !== 'function') throw new Error('fn must be a FUNCTION');
+  if (!doProfile) {
+    fn.report = () => `No profile for function: ${fn.name || 'NA'}`;
+    return fn;
+  }
+
   tick.executionTime = 0;
   tick.iteration = 0;
   tick.shortestIteration = Infinity;
