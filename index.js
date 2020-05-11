@@ -75,10 +75,10 @@ const client     = got.extend(getSearchOptions()),
       apiClient  = client.extend({timeout: istex.api.timeout});
 
 const dataUrl = new URL('api/run/all-documents', istex.data.url);
-//dataUrl.searchParams.set(model.type, SERIAL);
-//dataUrl.searchParams.set('uri', 'ark:/67375/8Q1-3DMK8QH9-F');
+dataUrl.searchParams.set(model.type, SERIAL);
+//dataUrl.searchParams.set('uri', 'ark:/67375/8Q1-FTPN3ZXV-C');
 //dataUrl.searchParams.set(model.title,'Journal of the Chemical Society D: Chemical Communications');
-//dataUrl.searchParams.set(model.corpus, 'springer-ebooks');
+dataUrl.searchParams.set(model.corpus, 'oup');
 dataUrl.searchParams.set('maxSize', 5000);
 dataUrl.searchParams.set('sid', app.sid);
 
@@ -193,9 +193,9 @@ hl(dataClient.stream(dataUrl))
       title_url                      : titleUrl,
       first_author                   : lodexData[model.type] === MONOGRAPH && lodexData[model.contributor] || null,
       title_id                       : lodexData[model.titleId],
-      notes                          : tagFollowedBy(lodexData[model.followedBy]),
-      parent_publication_title_id    : findTitleId(lodexData[model.parentPublicationTitleId]),
-      preceding_publication_title_id : findTitleId(lodexData[model.precededBy]),
+      notes                          : _tagFollowedBy(lodexData[model.followedBy]),
+      parent_publication_title_id    : _findTitleId(lodexData[model.parentPublicationTitleId]),
+      preceding_publication_title_id : _findTitleId(lodexData[model.precededBy]),
       access_type                    : lodexData[model.rights],
       publisher_name                 : lodexData[model.publisher],
       monograph_volume               : _getMonographVolume(lodexData, apiResult),
@@ -216,13 +216,13 @@ hl(dataClient.stream(dataUrl))
 
 ;
 
-function tagFollowedBy(value){
+function _tagFollowedBy(value){
   let titleId;
-  if(!(titleId = findTitleId(value))) return '';
+  if(!(titleId = _findTitleId(value))) return '';
   return `followed by: ${titleId}`;
 }
 
-function findTitleId (value) {
+function _findTitleId (value) {
   if (typeof value !== 'string' || value === '' || !value.startsWith(syndicationFromModel)) return null;
   return value.slice(-issnModel.length);
 }

@@ -12,9 +12,9 @@ istex:
   api:
     url: %env(ISTEX_EXCHANGE_API_URL)%
     timeout: 10000 # ms
-  data:
-    url: %env(ISTEX_EXCHANGE_DATA_URL)%
-    responseTimeout: 5000 #ms
+  review:
+    url: %env(ISTEX_EXCHANGE_REVIEW_URL)%
+    timeout: 5000 #ms
 
 nodejs:
   stackTraceLimit: 40

@@ -1,7 +1,7 @@
 {
   "laxbreak": true,
   "eqeqeq": true,
-  "eqnull": true,
+  "eqnull": false,
   "expr": true,
   "quotmark": true,
   "indent": 2,
