@@ -11,7 +11,7 @@ const apiClient              = require('./client').getApiClient(),
 
 module.exports.findDocumentsBy = findDocumentsBy;
 
-function findDocumentsBy ({apiQuery = '*', size = 0, output, facet} = {}) {
+function findDocumentsBy ({apiQuery = '*', size, output, facet} = {}) {
   const apiUrl = new URL('document', istex.api.url);
   apiUrl.search = new URLSearchParams(omitBy({
                                                'q'     : apiQuery,
