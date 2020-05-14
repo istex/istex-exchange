@@ -6,7 +6,7 @@ const NS_PER_MS = 1e6;
 
 function profile (fn, doProfile) {
   if (typeof fn !== 'function') throw new Error('fn must be a FUNCTION');
-  if (!doProfile) {
+  if (typeof doProfile !== 'boolean' || !doProfile) {
     fn.report = () => `No profile for function: ${fn.name || 'NA'}`;
     return fn;
   }

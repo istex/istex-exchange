@@ -46,7 +46,7 @@ function logInfo () {
 }
 
 function logWarning (err) {
-  if (process.env.NODE_ENV === 'test') return;
+  if ((process.env.NODE_ENV === 'test' && logWarning.doWarn !== true) || logWarning.doWarn === false) return;
   const message = typeof err === 'string' ? arguments : [err.message || '', err];
   console.warn('%s [%s] [%s] %s',
                appName.bold.warning,

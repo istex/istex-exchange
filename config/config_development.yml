@@ -5,5 +5,4 @@ imports:
   - resource: config.yml
 
 app:
-  sid: istex-exchange
   doProfile: true

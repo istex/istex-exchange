@@ -1,24 +1,28 @@
 'use strict';
 
-const should            = require('should'),
-      {exchange}        = require('../src/exchange'),
-      {findDocumentsBy} = require('../src/reviewManager'),
-      hl                = require('highland')
+const should              = require('should'),
+      {exchange}          = require('../src/exchange'),
+      {findDocumentsBy}   = require('../src/reviewManager'),
+      {MONOGRAPH, SERIAL} = require('../src/dataModel')
 ;
 
 describe('Exchange', function() {
-  it('Should compute exchange data', function(_done) {
+  it('Should compute exchange data', function(done) {
 
-    const maxSize = 50;
-    this.timeout(maxSize * 125);
-    const {pipeline, done} = exchange();
+    const maxSize              = 100,
+          expectedMaxTimeByDoc = 250, //ms
+          minTimeout           = 5000
+    ;
 
-    findDocumentsBy({type: 'serial', maxSize: 50})
+    this.timeout(Math.max(maxSize * expectedMaxTimeByDoc, minTimeout));
+
+    const {pipeline, info} = exchange({parallel: 50, doProfile: true, doWarn: true});
+
+    findDocumentsBy({type: SERIAL, maxSize})
       .pipe(pipeline)
-      .tap(hl.log)
       .done(() => {
+        info();
         done();
-        _done();
       })
     ;
   });

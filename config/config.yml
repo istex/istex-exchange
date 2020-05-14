@@ -8,6 +8,7 @@ imports:
 app:
   sid: istex-exchange
   doProfile: false
+  parallel: 5 # nb of reviewData that are processed in parallel
 istex:
   api:
     url: %env(ISTEX_EXCHANGE_API_URL)%

@@ -3,12 +3,12 @@
 const {istex, nodejs, app}                                        = require('config-component').get(module),
       hl                                                          = require('highland'),
       _                                                           = require('lodash'),
-      path                                                        = require('path'),
       {logWarning, logError, logInfo}                             = require('../helpers/logger'),
       buildCoverages                                              = require('./buildCoverages'),
       profile                                                     = require('../helpers/profile'),
       {model, SERIAL, MONOGRAPH, issnModel, syndicationFromModel} = require('./dataModel'),
-      {findDocumentsBy}                                           = require('./apiManager')
+      {findDocumentsBy}                                           = require('./apiManager'),
+      {URL}                                                       = require('url')
 ;
 
 Error.stackTraceLimit = nodejs.stackTraceLimit || Error.stackTraceLimit;
@@ -17,26 +17,31 @@ Error.stackTraceLimit = nodejs.stackTraceLimit || Error.stackTraceLimit;
 module.exports.exchange = exchange;
 
 /**
- *
- * @returns {{pipeline: hl.pipeline, done: done}} Return Object with 2 entries, pipeline is a highland pipeline
- * with the core application, done is a Function that can be call at the end of the stream to get info and stats.
+ * @param reviewUrl String the base url of Summary review
+ * @param parallel Number nb of parallel stream
+ * @param doProfile Boolean wrap some function with a profiler to get performance info
+ * @returns {{pipeline: hl.pipeline, info: Function}} Return Object with 2 entries, pipeline is a highland stream pipeline
+ * with the core application, logInfo is a Function that can be call at the end of the stream to get info and stats.
  *
  */
-function exchange () {
-
+function exchange ({reviewUrl = istex.review.url, parallel = app.parallel, doProfile = app.doProfile, doWarn} = {}) {
   let startDate,
       generatedExchangeObject = 0,
       expectedExchangeObject  = 0
   ;
-
-  const _buildCoverages = profile(buildCoverages, app.doProfile);
+  const _buildCoverages = profile(buildCoverages, doProfile);
+  logWarning.doWarn = doWarn;
 
   const pipeline =
           hl.pipeline(
-            hl.tap(() => {startDate = new Date();}),
             hl.map(reviewData => {
               let apiQuery;
               expectedExchangeObject++;
+
+              if (!reviewData._id) {
+                logWarning(`Invalid Summary review data object, missing _Id.`);
+                return;
+              }
 
               if (!(apiQuery = reviewData[model.istexQuery])) {
                 logWarning(`Invalid Summary review data object _id: ${reviewData._id.warning}, missing Istex query.`);
@@ -47,52 +52,57 @@ function exchange () {
 
               reviewData._query = apiQuery;
 
-              const apiSearch = findDocumentsBy({
-                                                  apiQuery,
-                                                  size  : 1,
-                                                  output: 'host,publicationDate,author',
-                                                  facet : buildCoverages.issueByVolume
-                                                });
+              const apiSearchIssueByVolume = findDocumentsBy({
+                                                               apiQuery,
+                                                               size  : 1,
+                                                               output: 'host,publicationDate,author',
+                                                               facet : buildCoverages.issueByVolume
+                                                             });
 
 
-              // we needs a second and third request for multiple aggregations
-              // @todo add hadoc route in the api
-              const apiSearchHostPublicationDateByVolumeAndIssue = findDocumentsBy({
-                                                                                     apiQuery,
-                                                                                     size  : 0,
-                                                                                     output: '',
-                                                                                     facet : buildCoverages.hostPublicationDateByVolumeAndIssue
-                                                                                   });
+              const apiSearch = [apiSearchIssueByVolume,
+                                 hl([reviewData])
+              ];
+
+              if (reviewData[model.type] === SERIAL) {
+
+                // we needs a second and third request for multiple aggregations
+                // @todo add hadoc route in the api
+                const apiSearchHostPublicationDateByVolumeAndIssue = findDocumentsBy({
+                                                                                       apiQuery,
+                                                                                       size  : 0,
+                                                                                       output: '',
+                                                                                       facet : buildCoverages.hostPublicationDateByVolumeAndIssue
+                                                                                     });
 
 
-              const apiSearchPublicationDateByVolumeAndIssue = findDocumentsBy({
-                                                                                 apiQuery,
-                                                                                 size  : 0,
-                                                                                 output: '',
-                                                                                 facet : buildCoverages.publicationDateByVolumeAndIssue
-                                                                               });
+                const apiSearchPublicationDateByVolumeAndIssue = findDocumentsBy({
+                                                                                   apiQuery,
+                                                                                   size  : 0,
+                                                                                   output: '',
+                                                                                   facet : buildCoverages.publicationDateByVolumeAndIssue
+                                                                                 });
+                apiSearch.push(apiSearchHostPublicationDateByVolumeAndIssue, apiSearchPublicationDateByVolumeAndIssue);
 
+              }
 
-              return hl([apiSearch,
-                         apiSearchHostPublicationDateByVolumeAndIssue,
-                         apiSearchPublicationDateByVolumeAndIssue,
-                         hl([reviewData])])
-                .parallel(4)
-                .batch(4)
+              return hl(apiSearch)
+                .parallel(apiSearch.length)
+                .batch(apiSearch.length)
                 .stopOnError(logWarning)
                 ;
             }),
             hl.compact(),
-            hl.parallel(5),
-            hl.map(([apiResult, apiResultHostPublicationDateByVolumeAndIssue, apiResultPublicationDateByVolumeAndIssue, reviewData]) => {
+            hl.parallel(parallel),
+            hl.map(([apiResult, reviewData, apiResultHostPublicationDateByVolumeAndIssue, apiResultPublicationDateByVolumeAndIssue]) => {
 
               if (apiResult.total === 0) {
                 logWarning(
                   `No Istex API result for LODEX data object _id: `
                   + `${_.get(reviewData, '_id', 'UNSET').warning}, `
-                  + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, query: ${_.get(reviewData,
-                                                                                       '_query',
-                                                                                       'UNSET').muted}`);
+                  + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
+                  + `query: ${_.get(reviewData, '_query', 'UNSET').muted}`
+                );
 
                 return;
               }
@@ -101,12 +111,13 @@ function exchange () {
                   && _.get(apiResult.hits, '0.host.genre') === 'book'
                   && _.get(apiResult.aggregations, ['host.volume', 'buckets'], []).length > 1
               ) {
-                logWarning(`Multiple volume ref. for monograph,  _id: ${_.get(reviewData,
-                                                                              '_id',
-                                                                              'UNSET').warning}, ark: ${_.get(
-                  reviewData,
-                  'uri',
-                  'UNSET').warning}, query: ${_.get(reviewData, '_query', 'UNSET').muted}`);
+                logWarning(
+                  `Multiple volume ref. for monograph, `
+                  + `_id: ${_.get(reviewData, '_id', 'UNSET').warning}, `
+                  + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
+                  + `query: ${_.get(reviewData, '_query', 'UNSET').muted}`
+                );
+
                 return;
               }
 
@@ -119,7 +130,9 @@ function exchange () {
                                   apiResultPublicationDateByVolumeAndIssue.aggregations)
                 : [];
 
-              const titleUrl = reviewData.uri && path.join(istex.review.url, reviewData.uri) || '';
+              let titleUrl = new URL(reviewUrl);
+              titleUrl.pathname = reviewData.uri;
+
               generatedExchangeObject += 1;
 
               return {
@@ -129,7 +142,7 @@ function exchange () {
                 coverage_depth                 : 'fulltext',
                 print_identifier               : reviewData[model.type] === SERIAL ? reviewData[model.issn] : reviewData[model.isbn],
                 online_identifier              : reviewData[model.type] === SERIAL ? reviewData[model.eIssn] : reviewData[model.eIsbn],
-                title_url                      : titleUrl,
+                title_url                      : titleUrl.toString(),
                 first_author                   : reviewData[model.type] === MONOGRAPH && reviewData[model.contributor] || null,
                 title_id                       : reviewData[model.titleId],
                 notes                          : _tagFollowedBy(reviewData[model.followedBy]),
@@ -146,14 +159,20 @@ function exchange () {
             hl.compact()
           );
 
-  function done () {
+  /**
+   *
+   * @param doTagEndDate Date tag the end date of the process
+   */
+  function info (doTagEndDate = true) {
     logInfo(_buildCoverages.report());
     logInfo(`Generated exchange object: ${generatedExchangeObject}/${expectedExchangeObject}`);
     logInfo('start date: ', startDate);
-    logInfo('end date: ', new Date());
+    doTagEndDate && logInfo('end date: ', new Date());
   }
 
-  return {pipeline, done};
+  pipeline.once('data', () => {startDate = new Date();});
+
+  return {pipeline, info};
 }
 
 /* private helpers */

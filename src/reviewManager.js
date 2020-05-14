@@ -1,6 +1,6 @@
 'use strict';
 
-const reviewClient                      = require('./client').getReviewClient(),
+const reviewClient                    = require('./client').getReviewClient(),
       {istex, nodejs, app}            = require('config-component').get(module),
       {model}                         = require('./dataModel'),
       {URL, URLSearchParams}          = require('url'),
@@ -20,17 +20,17 @@ module.exports.findDocumentsBy = findDocumentsBy;
  * @return {Object} return highland stream
  */
 function findDocumentsBy ({uri, type, corpus, title, maxSize} = {}) {
+  maxSize = typeof maxSize === 'number' ? maxSize.toString() : maxSize;
+
   const reviewUrl = new URL('api/run/all-documents', istex.review.url);
-
   reviewUrl.search = new URLSearchParams(pickBy({
-                                                'uri'         : uri,
-                                                [model.type]  : type,
-                                                [model.corpus]: corpus,
-                                                [model.title] : title,
-                                                'maxSize'     : maxSize,
-                                                'sid'         : app.sid
-                                              }, _isNotAnEmptyString));
-
+                                                  'uri'         : uri,
+                                                  [model.type]  : type,
+                                                  [model.corpus]: corpus,
+                                                  [model.title] : title,
+                                                  'maxSize'     : maxSize,
+                                                  'sid'         : app.sid
+                                                }, _isNotAnEmptyString));
   return hl(reviewClient.stream(reviewUrl))
     .through(parser())
     .through(pick({filter: 'data'}))
