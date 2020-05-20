@@ -12,10 +12,13 @@ app:
 istex:
   api:
     url: %env(ISTEX_EXCHANGE_API_URL)%
+    # timeout may be Object or Number, @see https://www.npmjs.com/package/got#timeout
     timeout: 10000 # ms
   review:
     url: %env(ISTEX_EXCHANGE_REVIEW_URL)%
-    timeout: 5000 #ms
+    # timeout may be Object or Number, @see https://www.npmjs.com/package/got#timeout
+    timeout:
+     response: 5000 #ms
 
 nodejs:
   stackTraceLimit: 40

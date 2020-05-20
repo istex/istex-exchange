@@ -25,6 +25,6 @@ module.exports = {
   },
   SERIAL              : 'serial',
   MONOGRAPH           : 'monograph',
-  issnModel           : 'nnnn-nnnn',
+  issnShape           : 'nnnn-nnnn',
   syndicationFromModel: '/api/run/syndication-from/nC6e'
 };

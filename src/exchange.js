@@ -6,7 +6,7 @@ const {istex, nodejs, app}                                        = require('con
       {logWarning, logError, logInfo}                             = require('../helpers/logger'),
       buildCoverages                                              = require('./buildCoverages'),
       profile                                                     = require('../helpers/profile'),
-      {model, SERIAL, MONOGRAPH, issnModel, syndicationFromModel} = require('./dataModel'),
+      {model, SERIAL, MONOGRAPH, issnShape, syndicationFromModel} = require('./dataModel'),
       {findDocumentsBy}                                           = require('./apiManager'),
       {URL}                                                       = require('url')
 ;
@@ -20,6 +20,7 @@ module.exports.exchange = exchange;
  * @param reviewUrl String the base url of Summary review
  * @param parallel Number nb of parallel stream
  * @param doProfile Boolean wrap some function with a profiler to get performance info
+ * @param doWarn Boolean log warnings
  * @returns {{pipeline: hl.pipeline, info: Function}} Return Object with 2 entries, pipeline is a highland stream pipeline
  * with the core application, logInfo is a Function that can be call at the end of the stream to get info and stats.
  *
@@ -98,7 +99,7 @@ function exchange ({reviewUrl = istex.review.url, parallel = app.parallel, doPro
 
               if (apiResult.total === 0) {
                 logWarning(
-                  `No Istex API result for LODEX data object _id: `
+                  `No Istex API result for Summary review data object _id: `
                   + `${_.get(reviewData, '_id', 'UNSET').warning}, `
                   + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
                   + `query: ${_.get(reviewData, '_query', 'UNSET').muted}`
@@ -122,7 +123,7 @@ function exchange ({reviewUrl = istex.review.url, parallel = app.parallel, doPro
               }
 
               if (!reviewData.uri) {
-                logWarning(`Missing Uri in lodexData object id:${reviewData._id}\n`, reviewData);
+                logWarning(`Missing Uri in Summary review data object id:${reviewData._id}\n`, reviewData);
               }
               const coverages = reviewData[model.type] === 'serial'
                 ? _buildCoverages(apiResult.aggregations,
@@ -184,11 +185,11 @@ function _tagFollowedBy (value) {
 
 function _findTitleId (value) {
   if (typeof value !== 'string' || value === '' || !value.startsWith(syndicationFromModel)) return null;
-  return value.slice(-issnModel.length);
+  return value.slice(-issnShape.length);
 }
 
-function _getMonographVolume (lodexData, apiResult) {
-  if (lodexData[model.type] !== MONOGRAPH) return null;
+function _getMonographVolume (reviewData, apiResult) {
+  if (reviewData[model.type] !== MONOGRAPH) return null;
   // we try to get volume number even if the initial data is not mere number
   const volume = parseInt(_.get(apiResult, 'hits.0.host.volume', null));
   if (isNaN(volume)) return null;
@@ -196,19 +197,19 @@ function _getMonographVolume (lodexData, apiResult) {
   return volume;
 }
 
-function _getDateMonographPublishedPrint (lodexData, apiResult) {
-  if (lodexData[model.type] !== MONOGRAPH || !lodexData[model.isbn]) return null;
+function _getDateMonographPublishedPrint (reviewData, apiResult) {
+  if (reviewData[model.type] !== MONOGRAPH || !reviewData[model.isbn]) return null;
   let monographDate = _.get(apiResult, 'hits.0.publicationDate', null);
 
-  if (!monographDate && !lodexData[model.eisbn]) {
+  if (!monographDate && !reviewData[model.eisbn]) {
     monographDate = _.get(apiResult, 'hits.0.host.publicationDate', null);
   }
 
   return monographDate;
 }
 
-function _getDateMonographPublishedOnline (lodexData, apiResult) {
-  if (lodexData[model.type] !== MONOGRAPH || !lodexData[model.eIsbn]) return null;
+function _getDateMonographPublishedOnline (reviewData, apiResult) {
+  if (reviewData[model.type] !== MONOGRAPH || !reviewData[model.eIsbn]) return null;
   const monographDate = _.get(apiResult,
                               'hits.0.host.publicationDate',
                               _.get(apiResult, 'hits.0.publicationDate', null)

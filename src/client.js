@@ -1,10 +1,10 @@
 'use strict';
 
 
-const {istex, nodejs, app} = require('config-component').get(module),
-      got                  = require('got'),
-      _                    = require('lodash'),
-      VError               = require('verror')
+const {istex} = require('config-component').get(module),
+      got     = require('got'),
+      _       = require('lodash'),
+      VError  = require('verror')
 ;
 
 module.exports.getReviewClient = getReviewClient;
@@ -12,7 +12,7 @@ module.exports.getApiClient = getApiClient;
 
 /* public */
 function getReviewClient () {
-  return got.extend(_getSearchOptions()).extend({timeout: {response: istex.review.timeout}});
+  return got.extend(_getSearchOptions()).extend({timeout: istex.review.timeout});
 }
 
 function getApiClient () {
