@@ -1,16 +1,16 @@
 'use strict';
 
-const reviewClient                    = require('./client').getReviewClient(),
-      {istex, nodejs, app}            = require('config-component').get(module),
-      {model}                         = require('./dataModel'),
-      {URL, URLSearchParams}          = require('url'),
-      {pickBy}                        = require('lodash'),
-      hl                              = require('highland'),
-      {parser}                        = require('stream-json'),
-      {streamArray}                   = require('stream-json/streamers/StreamArray'),
-      {pick}                          = require('stream-json/filters/Pick'),
-      {logWarning, logError, logInfo} = require('../helpers/logger'),
-      VError                          = require('verror')
+const reviewClient           = require('./client').getReviewClient(),
+      {istex, app}           = require('config-component').get(module),
+      {model}                = require('./dataModel'),
+      {URL, URLSearchParams} = require('url'),
+      {pickBy}               = require('lodash'),
+      hl                     = require('highland'),
+      {parser}               = require('stream-json'),
+      {streamArray}          = require('stream-json/streamers/StreamArray'),
+      {pick}                 = require('stream-json/filters/Pick'),
+      {logError}             = require('../helpers/logger'),
+      VError                 = require('verror')
 ;
 
 

@@ -1,8 +1,10 @@
 'use strict';
 const _ = require('lodash');
 
+
 module.exports = buildCoverages;
 
+// public
 buildCoverages.issueByVolume = 'host.volume[*-*:1]>host.issue[*-*:1]';
 buildCoverages.hostPublicationDateByVolumeAndIssue = 'host.volume[*-*:1]>host.publicationDate[*-*:1],host.issue[*-*:1]>host.publicationDate[*-*:1]';
 buildCoverages.publicationDateByVolumeAndIssue = 'host.volume[*-*:1]>publicationDate[*-*:1],host.issue[*-*:1]>publicationDate[*-*:1]';
@@ -28,12 +30,12 @@ function buildCoverages (aggsIssueByVolume = [], aggsHostPublicationDateByVolume
   if (hasIssue && !hasVolume) {
 
     coverages.push({
-                     first_issue     : hostPublicationDateByIssue[0].key || null,
-                     first_volume    : null,
-                     date_first_issue: _getDateFirstIssue(hostPublicationDateByIssue, publicationDateByIssue),
-                     last_issue      : hostPublicationDateByIssue[hostPublicationDateByIssue.length - 1].key || null,
-                     last_volume     : null,
-                     date_last_issue : _getDateLastIssue(hostPublicationDateByIssue, publicationDateByIssue)
+                     num_first_issue_online     : hostPublicationDateByIssue[0].key || null,
+                     num_first_vol_online    : null,
+                     date_first_issue_online: _getDateFirstIssue(hostPublicationDateByIssue, publicationDateByIssue),
+                     num_last_issue_online      : hostPublicationDateByIssue[hostPublicationDateByIssue.length - 1].key || null,
+                     num_last_vol_online     : null,
+                     date_last_issue_online : _getDateLastIssue(hostPublicationDateByIssue, publicationDateByIssue)
                    });
 
     return coverages;
@@ -52,23 +54,23 @@ function buildCoverages (aggsIssueByVolume = [], aggsHostPublicationDateByVolume
       if (issueByVolume[i].docCount > 0) {
 
         coverages.push({
-                         first_issue     : hasIssue ? _searchFirstIssue(issueByVolume[i]) : null,
-                         first_volume    : issueByVolume[i].key,
-                         date_first_issue: _getDateFirstIssueByVolume(i,
+                         num_first_issue_online     : hasIssue ? _searchFirstIssue(issueByVolume[i]) : null,
+                         num_first_vol_online    : issueByVolume[i].key,
+                         date_first_issue_online: _getDateFirstIssueByVolume(i,
                                                                       hostPublicationDateByVolume,
                                                                       publicationDateByVolume),
-                         last_issue      : null,
-                         last_volume     : null,
-                         date_last_issue : null
+                         num_last_issue_online      : null,
+                         num_last_vol_online     : null,
+                         date_last_issue_online : null
                        });
 
         searchFor = END;
 
         if (i === issueByVolume.length - 1) {
           let currentCoverage = coverages[coverages.length - 1];
-          currentCoverage.last_issue = hasIssue ? _searchLastIssue(issueByVolume[i]) : null;
-          currentCoverage.last_volume = currentCoverage.first_volume;
-          currentCoverage.date_last_issue = _getDateLastIssueByVolume(i,
+          currentCoverage.num_last_issue_online = hasIssue ? _searchLastIssue(issueByVolume[i]) : null;
+          currentCoverage.num_last_vol_online = currentCoverage.num_first_vol_online;
+          currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(i,
                                                                       hostPublicationDateByVolume,
                                                                       publicationDateByVolume);
 
@@ -81,9 +83,9 @@ function buildCoverages (aggsIssueByVolume = [], aggsHostPublicationDateByVolume
     if (searchFor === END) {
       if (issueByVolume[i].docCount === 0) {
         let currentCoverage = coverages[coverages.length - 1];
-        currentCoverage.last_issue = hasIssue ? _searchLastIssue(issueByVolume[i - 1]) : null;
-        currentCoverage.last_volume = issueByVolume[i - 1].key;
-        currentCoverage.date_last_issue = _getDateLastIssueByVolume(i - 1,
+        currentCoverage.num_last_issue_online = hasIssue ? _searchLastIssue(issueByVolume[i - 1]) : null;
+        currentCoverage.num_last_vol_online = issueByVolume[i - 1].key;
+        currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(i - 1,
                                                                     hostPublicationDateByVolume,
                                                                     publicationDateByVolume);
         searchFor = START;
@@ -93,9 +95,9 @@ function buildCoverages (aggsIssueByVolume = [], aggsHostPublicationDateByVolume
 
       if (i === issueByVolume.length - 1) {
         let currentCoverage = coverages[coverages.length - 1];
-        currentCoverage.last_issue = hasIssue ? _searchLastIssue(issueByVolume[i]) : null;
-        currentCoverage.last_volume = issueByVolume[i].key;
-        currentCoverage.date_last_issue =  _getDateLastIssueByVolume(i, hostPublicationDateByVolume, publicationDateByVolume);
+        currentCoverage.num_last_issue_online = hasIssue ? _searchLastIssue(issueByVolume[i]) : null;
+        currentCoverage.num_last_vol_online = issueByVolume[i].key;
+        currentCoverage.date_last_issue_online =  _getDateLastIssueByVolume(i, hostPublicationDateByVolume, publicationDateByVolume);
 
         searchFor = START;
         continue;
@@ -109,6 +111,7 @@ function buildCoverages (aggsIssueByVolume = [], aggsHostPublicationDateByVolume
 
 }
 
+// private helpers
 function _getDateLastIssueByVolume (index, hostPublicationDateByVolume, publicationDateByVolume) {
   return _.chain(hostPublicationDateByVolume[index]['host.publicationDate'].buckets)
           .last()

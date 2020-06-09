@@ -8,6 +8,8 @@ imports:
 app:
   sid: istex-exchange
   doProfile: false
+  doWarn: false
+  doLogError: true
   parallel: 5 # nb of reviewData that are processed in parallel
 istex:
   api:
