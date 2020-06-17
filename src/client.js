@@ -6,6 +6,9 @@ const {istex} = require('config-component').get(module),
       _       = require('lodash'),
       VError  = require('verror')
 ;
+const CacheableLookup = require('cacheable-lookup');
+
+const cacheable = istex.api.useCacheLookup? new CacheableLookup(): false;
 
 module.exports.getReviewClient = getReviewClient;
 module.exports.getApiClient = getApiClient;
@@ -16,7 +19,7 @@ function getReviewClient () {
 }
 
 function getApiClient () {
-  return got.extend(_getSearchOptions()).extend({timeout: istex.api.timeout});
+  return got.extend(_getSearchOptions()).extend({timeout: istex.api.timeout, dnsCache:cacheable});
 }
 
 /* private helpers */
@@ -27,8 +30,8 @@ function _getSearchOptions () {
       beforeError: [
         error => {
           const requestUrl = decodeURIComponent(_.get(error, 'options.url'));
-          return VError({cause: error, name: 'RequestError', info: {requestUrl}},
-                        'Error %s requesting: %s ',
+          return new VError({cause: error, name: 'RequestError', info: {requestUrl}},
+                        'Error %s requesting: %s',
                         _.get(error, 'response.statusCode', 'N/A'),
                         requestUrl);
         }

@@ -3,7 +3,7 @@ const _                   = require('lodash'),
       stringify           = require('csv-stringify'),
       hl                  = require('highland'),
       {fields}            = require('./kbartModel'),
-      {MONOGRAPH, SERIAL} = require('./dataModel')
+      {MONOGRAPH, SERIAL} = require('./reviewModel')
 ;
 
 

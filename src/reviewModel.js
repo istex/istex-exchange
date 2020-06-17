@@ -2,6 +2,10 @@
 
 module.exports = {
   model               : {
+    _id                     : '_id',
+    uri                     : 'uri',
+    _query                  : '_query',
+    lodexPublished          : 'lodex_published',
     type                    : 'WmzM',
     title                   : 'XXRn',
     contributor             : 'Ai4O',
@@ -23,6 +27,13 @@ module.exports = {
     parentPublicationTitleId: 'XX3r'
 
   },
+  duckTyping          : [
+    '_id',
+    'uri',
+    'lodexPublished',
+    'type',
+    'title'
+  ],
   SERIAL              : 'serial',
   MONOGRAPH           : 'monograph',
   issnShape           : 'nnnn-nnnn',

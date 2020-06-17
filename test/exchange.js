@@ -1,78 +1,64 @@
 'use strict';
 
-const should              = require('should'),
-      {exchange}          = require('../src/exchange'),
-      {toKbart}           = require('../src/toKbart'),
-      {findDocumentsBy}   = require('../src/reviewManager'),
-      {MONOGRAPH, SERIAL} = require('../src/dataModel')
+const should                 = require('should'),
+      {exchange}             = require('../src/exchange'),
+      {toKbart}              = require('../src/toKbart'),
+      {findDocumentsBy}      = require('../src/reviewManager'),
+      {MONOGRAPH, SERIAL}    = require('../src/reviewModel'),
+      {app, testSuit, istex} = require('config-component').get(module),
+      expectedResult         = require('./expectedResult'),
+_ = require('lodash')
 ;
 
 describe('Exchange', function() {
-  it('Should compute exchange data', function(done) {
+  it('Should compute exchange data with no error', function(done) {
 
-    const maxSize              = 100,
-          expectedMaxTimeByDoc = 260, //ms
-          minTimeout           = 5000,
-          parallel             = 5,
-          expectedTimeout      =
-            Math.round(
-              Math.max(
-                maxSize * expectedMaxTimeByDoc / Math.log(Math.min(parallel, 5) + 1),
-                minTimeout)
-            )
+    const maxSize  = 100,
+          parallel = 20
     ;
+
+    const expectedTimeout = getExpectedTimeout({maxSize, parallel});
 
     this.timeout(expectedTimeout);
     console.info('Expected timeout: ', expectedTimeout);
 
-    this.timeout(Math.max(maxSize * expectedMaxTimeByDoc, minTimeout));
-
-    const {pipeline, info} = exchange({parallel: 50, doProfile: true, doWarn: true});
-    const onFinished = onceDone(done);
+    const exchanger = exchange({parallel, doProfile: true, doWarn: true, doLogEndInfo: true});
+    const onceFinished = onceDone(done);
 
     findDocumentsBy({type: SERIAL, maxSize})
-      .pipe(pipeline)
-      .stopOnError(onFinished)
+      .through(exchanger)
+      .stopOnError(onceFinished)
       .done(function() {
-        info();
-        onFinished();
+        onceFinished();
       })
     ;
 
 
   });
 
-  it.only('Should stream kbart stringified exchange data', function(done) {
-    const maxSize              = 100,
-          expectedMaxTimeByDoc = 260, //ms
-          minTimeout           = 5000,
-          parallel             = 5,
-          expectedTimeout      =
-            Math.round(
-              Math.max(
-                maxSize * expectedMaxTimeByDoc / Math.log(Math.min(parallel, 5) + 1),
-                minTimeout)
-            )
-    ;
 
+  it('Should stream headers and kbart lines', function(done) {
+
+
+    const expectedTimeout = getExpectedTimeout();
     this.timeout(expectedTimeout);
     console.info('Expected timeout: ', expectedTimeout);
-    const {pipeline, info} = exchange({parallel, doProfile: true, doWarn: true});
-    const onFinished = onceDone(done);
+
+    const exchanger = exchange({doProfile: true, doWarn: true});
+    const onceFinished = onceDone(done);
+    let result = '';
+
 
     findDocumentsBy({
-                      type: SERIAL,
-                      maxSize
-                      //uri:'ark:/67375/8Q1-0S5X5C92-M'
+                      uri: 'ark:/67375/8Q1-32DSDVT8-D'
                     })
-      .pipe(pipeline)
-      //.tap((data)=>{console.log(data)})
-      .pipe(toKbart)
-      //.tap((data)=>{console.log(data)})
-      .stopOnError(onFinished)
+      .through(exchanger)
+      .through(toKbart)
+      .each((kbartLine) => result += kbartLine)
+      .stopOnError(onceFinished)
       .done(() => {
-        info();
-        onFinished();
+        result.should.equal(expectedResult.toKbart);
+        onceFinished();
       })
     ;
 
@@ -80,6 +66,14 @@ describe('Exchange', function() {
 });
 
 // Helpers
+function getExpectedTimeout ({maxSize = 1, parallel = app.parallel} = {}) {
+  return Math.round(
+    Math.max(
+      1.5 * (maxSize * testSuit.expectedAvgTimeByIteration + istex.api.timeout.response),
+      1.5 * (testSuit.minTimeout + istex.api.timeout.response))
+  );
+}
+
 function onceDone (cb) {
   let called = false;
   return (err) => {
@@ -87,4 +81,9 @@ function onceDone (cb) {
     called = true;
     cb(err);
   };
+}
+
+// useful to see passing flow
+function _logRandomDot () {
+  console.info('.'.padEnd(Math.floor(Math.random() * Math.floor(4)), '.'));
 }

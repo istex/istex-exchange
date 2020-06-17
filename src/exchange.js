@@ -1,14 +1,22 @@
 'use strict';
 
-const {istex, nodejs, app}                                        = require('config-component').get(module),
-      hl                                                          = require('highland'),
-      _                                                           = require('lodash'),
-      {logWarning, logError, logInfo}                             = require('../helpers/logger'),
-      buildCoverages                                              = require('./buildCoverages'),
-      profile                                                     = require('../helpers/profile'),
-      {model, SERIAL, MONOGRAPH, issnShape, syndicationFromModel} = require('./dataModel'),
-      {findDocumentsBy}                                           = require('./apiManager'),
-      {URL}                                                       = require('url')
+const {istex, nodejs, app}            = require('config-component').get(module),
+      hl                              = require('highland'),
+      _                               = require('lodash'),
+      {logWarning, logError, logInfo} = require('../helpers/logger'),
+      buildCoverages                  = require('./buildCoverages'),
+      profile                         = require('../helpers/profile'),
+      {
+        model,
+        duckTyping: reviewDuckTyping,
+        SERIAL,
+        MONOGRAPH,
+        issnShape,
+        syndicationFromModel
+      }                               = require('./reviewModel'),
+      {findDocumentsBy}               = require('./apiManager'),
+      {URL}                           = require('url'),
+      VError                          = require('verror')
 ;
 
 Error.stackTraceLimit = nodejs.stackTraceLimit || Error.stackTraceLimit;
@@ -22,15 +30,25 @@ module.exports.exchange = exchange;
  * @param parallel Number nb of parallel stream
  * @param doProfile Boolean wrap some function with a profiler to get performance info
  * @param doWarn Boolean log warnings
- * @returns {{pipeline: hl.pipeline, info: Function}} Return Object with 2 entries, pipeline is a highland stream pipeline
- * with the core application, logInfo is a Function that can be call at the end of the stream to get info and stats.
+ * @params doLogError Boolean log errors
+ * @params doLogEndInfo Boolean log info and stats at the end of the process
+ * @returns pipeline hl.pipeline Return an highland stream pipeline
  *
  */
-function exchange ({reviewUrl = istex.review.url, parallel = app.parallel, doProfile = app.doProfile, doWarn = false, doLogError = true} = {}) {
-  let startDate,
+function exchange ({
+                     reviewUrl = istex.review.url,
+                     parallel = app.parallel,
+                     doProfile = app.doProfile,
+                     doWarn = false,
+                     doLogError = true,
+                     doLogEndInfo = false
+                   } = {}) {
+  let startDate               = 0,
+      startTime               = 0,
       generatedExchangeObject = 0,
       expectedExchangeObject  = 0
   ;
+
   const _buildCoverages = profile(buildCoverages, doProfile);
   logWarning.doWarn = doWarn;
 
@@ -40,18 +58,21 @@ function exchange ({reviewUrl = istex.review.url, parallel = app.parallel, doPro
               reviewData => {
                 let apiQuery;
                 expectedExchangeObject++;
-
                 if (!reviewData._id) {
                   logWarning(`Invalid Summary review data object, missing _Id.`);
                   return;
                 }
 
                 if (!(apiQuery = reviewData[model.istexQuery])) {
-                  logWarning(`Invalid Summary review data object _id: ${reviewData._id.warning}, missing Istex query.`);
+                  logWarning(`Invalid Summary review data object _id: ${reviewData._id.warning}, `
+                             + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
+                             + `missing Istex query.`);
                   return;
                 }
 
-                apiQuery += ` AND publicationDate:[${reviewData[model.startDate] || '*'} TO ${reviewData[model.endDate] || '*'}]`;
+                if (!~reviewData[model.istexQuery].indexOf('publicationDate')) {
+                  apiQuery += ` AND publicationDate:[${reviewData[model.startDate] || '*'} TO ${reviewData[model.endDate] || '*'}]`;
+                }
 
                 reviewData._query = apiQuery;
 
@@ -174,13 +195,35 @@ function exchange ({reviewUrl = istex.review.url, parallel = app.parallel, doPro
   function info (doTagEndDate = true) {
     logInfo(_buildCoverages.report());
     logInfo(`Generated exchange object: ${generatedExchangeObject}/${expectedExchangeObject}`);
+    logInfo(`Elapsed time: ${ Number(process.hrtime.bigint() - startTime) / 1E6} ms`);
     logInfo('start date: ', startDate);
     doTagEndDate && logInfo('end date: ', new Date());
   }
 
-  pipeline.once('data', () => {startDate = new Date();});
+  pipeline.once('pipe',
+                (stream) => {
+                  stream.once('data', (data) => {
+                    startDate = new Date();
+                    startTime = process.hrtime.bigint();
 
-  return {pipeline, info};
+                    // we ducktype the first Data upstream to check if its a reviewData Object
+                    const dataKeys     = _.keys(data),
+                          expectedKeys = reviewDuckTyping.map(key => model[key]),
+                          keysDiff     = _.difference(expectedKeys, dataKeys)
+                    ;
+
+                    if (keysDiff.length !== 0) throw new VError(
+                      'Wrong data type, expecting that: %s, to includes this keys: %s, missing: %s',
+                      JSON.stringify(data),
+                      JSON.stringify(expectedKeys),
+                      JSON.stringify(keysDiff)
+                    );
+                  });
+                });
+
+  pipeline.once('end', () => {doLogEndInfo && info();});
+
+  return pipeline;
 }
 
 /* private helpers */

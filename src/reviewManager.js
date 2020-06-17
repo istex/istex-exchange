@@ -2,7 +2,7 @@
 
 const reviewClient           = require('./client').getReviewClient(),
       {istex, app}           = require('config-component').get(module),
-      {model}                = require('./dataModel'),
+      {model}                = require('./reviewModel'),
       {URL, URLSearchParams} = require('url'),
       {pickBy}               = require('lodash'),
       hl                     = require('highland'),
@@ -24,7 +24,7 @@ function findDocumentsBy ({uri, type, corpus, title, maxSize} = {}) {
 
   const reviewUrl = new URL('api/run/all-documents', istex.review.url);
   reviewUrl.search = new URLSearchParams(pickBy({
-                                                  'uri'         : uri,
+                                                  [model.uri]   : uri,
                                                   [model.type]  : type,
                                                   [model.corpus]: corpus,
                                                   [model.title] : title,

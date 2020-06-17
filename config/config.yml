@@ -4,18 +4,31 @@
 imports:
   - resource: secret_parameters.yml
 
+parameters:
+ ISTEX_EXCHANGE_USE_CACHE_LOOKUP: true
 
 app:
   sid: istex-exchange
   doProfile: false
   doWarn: false
   doLogError: true
-  parallel: 5 # nb of reviewData that are processed in parallel
+  parallel: 5 # nb of reviewData that are processed in parallel, Warning: diminishing returns due to istex.api bottleneck
+
+testSuit:
+  expectedAvgTimeByIteration: 300 #ms
+  minTimeout: 5000 #ms
+
 istex:
   api:
     url: %env(ISTEX_EXCHANGE_API_URL)%
+
+    # Boolean This should stay disabled when making requests to internal hostnames, @see https://www.npmjs.com/package/got#dnscache
+    useCacheLookup: %env(ISTEX_EXCHANGE_USE_CACHE_LOOKUP)%
+
     # timeout may be Object or Number, @see https://www.npmjs.com/package/got#timeout
-    timeout: 10000 # ms
+    timeout:
+     response: 10000 # ms
+
   review:
     url: %env(ISTEX_EXCHANGE_REVIEW_URL)%
     # timeout may be Object or Number, @see https://www.npmjs.com/package/got#timeout
