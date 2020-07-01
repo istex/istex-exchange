@@ -30,7 +30,6 @@ module.exports = {
   duckTyping          : [
     '_id',
     'uri',
-    'lodexPublished',
     'type',
     'title'
   ],

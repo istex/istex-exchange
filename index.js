@@ -1,3 +1,7 @@
 'use strict';
 
-module.exports = require('./src/exchange').exchange;
+module.exports = {
+  exchange     : require('./src/exchange').exchange,
+  toKbart      : require('./src/toKbart').toKbart,
+  reviewManager: require('./src/reviewManager')
+};

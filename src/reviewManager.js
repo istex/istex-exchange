@@ -35,11 +35,13 @@ function findDocumentsBy ({uri, type, corpus, title, maxSize} = {}) {
     .through(parser())
     .through(pick({filter: 'data'}))
     .through(streamArray())
-    .stopOnError(error => {
+    .stopOnError((error, push) => {
       const requestUrl = decodeURIComponent(reviewUrl.toString());
-      logError(VError({cause: error, name: 'ReviewRequestError', info: {reviewUrl}},
+      const verror = VError({cause: error, name: 'ReviewRequestError', info: {reviewUrl}},
                       'Error requesting: %s',
-                      requestUrl));
+                      requestUrl);
+      push(verror);
+
     })
     .map(hl.get('value'));
 }

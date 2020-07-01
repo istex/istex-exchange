@@ -1,19 +1,18 @@
 'use strict';
 
-const should                 = require('should'),
-      {exchange}             = require('../src/exchange'),
-      {toKbart}              = require('../src/toKbart'),
-      {findDocumentsBy}      = require('../src/reviewManager'),
-      {MONOGRAPH, SERIAL}    = require('../src/reviewModel'),
-      {app, testSuit, istex} = require('config-component').get(module),
-      expectedResult         = require('./expectedResult'),
-_ = require('lodash')
+const should                     = require('should'),
+      {exchange}                 = require('../src/exchange'),
+      {toKbart}                  = require('../src/toKbart'),
+      {findDocumentsBy}          = require('../src/reviewManager'),
+      {MONOGRAPH, SERIAL, model} = require('../src/reviewModel'),
+      {app, testSuit, istex}     = require('config-component').get(module),
+      expectedResult             = require('./expectedResult')
 ;
 
 describe('Exchange', function() {
   it('Should compute exchange data with no error', function(done) {
 
-    const maxSize  = 100,
+    const maxSize  = 50,
           parallel = 20
     ;
 
@@ -22,17 +21,14 @@ describe('Exchange', function() {
     this.timeout(expectedTimeout);
     console.info('Expected timeout: ', expectedTimeout);
 
-    const exchanger = exchange({parallel, doProfile: true, doWarn: true, doLogEndInfo: true});
     const onceFinished = onceDone(done);
+    const exchanger = exchange({parallel, doProfile: true, doWarn: true, doLogEndInfo: true, doLogError: false});
 
-    findDocumentsBy({type: SERIAL, maxSize})
+   return  findDocumentsBy({type: SERIAL, maxSize})
       .through(exchanger)
       .stopOnError(onceFinished)
-      .done(function() {
-        onceFinished();
-      })
+      .done(onceFinished)
     ;
-
 
   });
 
@@ -44,17 +40,17 @@ describe('Exchange', function() {
     this.timeout(expectedTimeout);
     console.info('Expected timeout: ', expectedTimeout);
 
-    const exchanger = exchange({doProfile: true, doWarn: true});
+    const exchanger = exchange({doProfile: true, doWarn: true, doLogError: false, doLogEndInfo: true});
     const onceFinished = onceDone(done);
     let result = '';
 
 
     findDocumentsBy({
-                      uri: 'ark:/67375/8Q1-32DSDVT8-D'
+                      [model.uri]: 'ark:/67375/8Q1-32DSDVT8-D'
                     })
       .through(exchanger)
-      .through(toKbart)
-      .each((kbartLine) => result += kbartLine)
+      .through(toKbart())
+      .doto((kbartLine) => {result += kbartLine;})
       .stopOnError(onceFinished)
       .done(() => {
         result.should.equal(expectedResult.toKbart);
@@ -63,6 +59,7 @@ describe('Exchange', function() {
     ;
 
   });
+
 });
 
 // Helpers

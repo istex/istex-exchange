@@ -1,24 +1,24 @@
 'use strict';
-const _                   = require('lodash'),
-      stringify           = require('csv-stringify'),
-      hl                  = require('highland'),
-      {fields}            = require('./kbartModel'),
-      {MONOGRAPH, SERIAL} = require('./reviewModel')
+const _         = require('lodash'),
+      stringify = require('csv-stringify'),
+      {fields}  = require('./kbartModel')
 ;
 
 
-const stringifier = stringify({header: true, delimiter: '\t', columns: fields});
+module.exports.toKbart = function({header = true} = {}) {
+  return function(s) {
+    const stringifier = stringify({header, delimiter: '\t', columns: fields});
+    return s.map(_unfoldExchangeData)
+            .flatten()
+            .through(stringifier)
+            .map((buffer) => buffer.toString())
+      ;
+  };
+};
 
-module.exports.toKbart = hl.pipeline(
-  hl.map(unfoldExchangeData),
-  hl.flatten(),
-  stringifier,
-  hl.map((buffer)=> buffer.toString())
-);
-
-function unfoldExchangeData (exchangeData) {
+// private helpers
+function _unfoldExchangeData (exchangeData) {
   if (!exchangeData._coverages.length) return _.omit(exchangeData, ['_coverages']);
-
   return _.chain(exchangeData._coverages)
           .transform((result, coverage) => {
                        const unfoldCoverage = _.chain(exchangeData)

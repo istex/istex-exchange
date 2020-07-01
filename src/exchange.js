@@ -32,7 +32,7 @@ module.exports.exchange = exchange;
  * @param doWarn Boolean log warnings
  * @params doLogError Boolean log errors
  * @params doLogEndInfo Boolean log info and stats at the end of the process
- * @returns pipeline hl.pipeline Return an highland stream pipeline
+ * @returns through function
  *
  */
 function exchange ({
@@ -40,11 +40,10 @@ function exchange ({
                      parallel = app.parallel,
                      doProfile = app.doProfile,
                      doWarn = false,
-                     doLogError = true,
-                     doLogEndInfo = false
+                     doLogError = true
                    } = {}) {
   let startDate               = 0,
-      startTime               = 0,
+      startTime               = process.hrtime.bigint(),
       generatedExchangeObject = 0,
       expectedExchangeObject  = 0
   ;
@@ -52,141 +51,165 @@ function exchange ({
   const _buildCoverages = profile(buildCoverages, doProfile);
   logWarning.doWarn = doWarn;
 
-  const pipeline =
-          hl.pipeline(
-            hl.map(
-              reviewData => {
-                let apiQuery;
-                expectedExchangeObject++;
-                if (!reviewData._id) {
-                  logWarning(`Invalid Summary review data object, missing _Id.`);
-                  return;
-                }
+  return function(s) {
+    return s
+      .map(
+        reviewData => {
+          if (!duckTypeReviewData.once) duckTypeReviewData(reviewData);
 
-                if (!(apiQuery = reviewData[model.istexQuery])) {
-                  logWarning(`Invalid Summary review data object _id: ${reviewData._id.warning}, `
-                             + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
-                             + `missing Istex query.`);
-                  return;
-                }
+          let apiQuery;
+          expectedExchangeObject++;
+          if (!reviewData._id) {
+            logWarning(`Invalid Summary review data object, missing _Id.`);
+            return;
+          }
 
-                if (!~reviewData[model.istexQuery].indexOf('publicationDate')) {
-                  apiQuery += ` AND publicationDate:[${reviewData[model.startDate] || '*'} TO ${reviewData[model.endDate] || '*'}]`;
-                }
+          if (!(apiQuery = reviewData[model.istexQuery])) {
+            logWarning(`Invalid Summary review data object _id: ${reviewData._id.warning}, `
+                       + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
+                       + `missing Istex query.`);
+            return;
+          }
 
-                reviewData._query = apiQuery;
+          if (!~reviewData[model.istexQuery].indexOf('publicationDate')) {
+            apiQuery += ` AND publicationDate:[${reviewData[model.startDate] || '*'} TO ${reviewData[model.endDate] || '*'}]`;
+          }
 
-                const apiSearchIssueByVolume = findDocumentsBy({
-                                                                 apiQuery,
-                                                                 size  : 1,
-                                                                 output: 'host,publicationDate,author',
-                                                                 facet : buildCoverages.issueByVolume
-                                                               });
+          reviewData._query = apiQuery;
 
-
-                const apiSearch = [apiSearchIssueByVolume,
-                                   hl([reviewData])
-                ];
-
-                if (reviewData[model.type] === SERIAL) {
-
-                  // we needs a second and third request for multiple aggregations
-                  // @todo add hadoc route in the api
-                  const apiSearchHostPublicationDateByVolumeAndIssue = findDocumentsBy({
-                                                                                         apiQuery,
-                                                                                         size  : 0,
-                                                                                         output: '',
-                                                                                         facet : buildCoverages.hostPublicationDateByVolumeAndIssue
-                                                                                       });
+          const apiSearchIssueByVolume = findDocumentsBy({
+                                                           apiQuery,
+                                                           size  : 1,
+                                                           output: 'host,publicationDate,author',
+                                                           facet : buildCoverages.issueByVolume
+                                                         });
 
 
-                  const apiSearchPublicationDateByVolumeAndIssue = findDocumentsBy({
-                                                                                     apiQuery,
-                                                                                     size  : 0,
-                                                                                     output: '',
-                                                                                     facet : buildCoverages.publicationDateByVolumeAndIssue
-                                                                                   });
-                  apiSearch.push(apiSearchHostPublicationDateByVolumeAndIssue,
-                                 apiSearchPublicationDateByVolumeAndIssue);
+          const apiSearch = [
+            apiSearchIssueByVolume,
+            hl([reviewData])
+          ];
 
-                }
+          if (reviewData[model.type] === SERIAL) {
 
-                return hl(apiSearch)
-                  .parallel(apiSearch.length)
-                  .batch(apiSearch.length)
-                  .stopOnError(logWarning)
-                  ;
-              }),
-            hl.compact(),
-            hl.parallel(parallel),
-            hl.map(
-              ([apiResult, reviewData, apiResultHostPublicationDateByVolumeAndIssue, apiResultPublicationDateByVolumeAndIssue]) => {
+            // we needs a second and third request for multiple aggregations
+            // @todo add hadoc route in the api
+            const apiSearchHostPublicationDateByVolumeAndIssue = findDocumentsBy({
+                                                                                   apiQuery,
+                                                                                   size  : 0,
+                                                                                   output: '',
+                                                                                   facet : buildCoverages.hostPublicationDateByVolumeAndIssue
+                                                                                 });
 
-                if (apiResult.total === 0) {
-                  logWarning(
-                    `No Istex API result for Summary review data object _id: `
-                    + `${_.get(reviewData, '_id', 'UNSET').warning}, `
-                    + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
-                    + `query: ${_.get(reviewData, '_query', 'UNSET').muted}`
-                  );
 
-                  return;
-                }
+            const apiSearchPublicationDateByVolumeAndIssue = findDocumentsBy({
+                                                                               apiQuery,
+                                                                               size  : 0,
+                                                                               output: '',
+                                                                               facet : buildCoverages.publicationDateByVolumeAndIssue
+                                                                             });
+            apiSearch.push(apiSearchHostPublicationDateByVolumeAndIssue,
+                           apiSearchPublicationDateByVolumeAndIssue);
 
-                if (reviewData[model.type] === 'monograph'
-                    && _.get(apiResult.hits, '0.host.genre') === 'book'
-                    && _.get(apiResult.aggregations, ['host.volume', 'buckets'], []).length > 1
-                ) {
-                  logWarning(
-                    `Multiple volume ref. for monograph, `
-                    + `_id: ${_.get(reviewData, '_id', 'UNSET').warning}, `
-                    + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
-                    + `query: ${_.get(reviewData, '_query', 'UNSET').muted}`
-                  );
+          }
+          return hl(apiSearch)
+            .parallel(apiSearch.length)
+            .batch(apiSearch.length)
+            .stopOnError(logWarning)
+            ;
+        })
+      .compact()
+      .parallel(parallel)
+      .map(
+        ([apiResult, reviewData, apiResultHostPublicationDateByVolumeAndIssue, apiResultPublicationDateByVolumeAndIssue]) => {
+          if (apiResult.total === 0) {
+            logWarning(
+              `No Istex API result for Summary review data object _id: `
+              + `${_.get(reviewData, '_id', 'UNSET').warning}, `
+              + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
+              + `query: ${_.get(reviewData, '_query', 'UNSET').muted}`
+            );
 
-                  return;
-                }
+            return;
+          }
 
-                if (!reviewData.uri) {
-                  logWarning(`Missing Uri in Summary review data object id:${reviewData._id}\n`, reviewData);
-                }
-                const coverages = reviewData[model.type] === 'serial'
-                  ? _buildCoverages(apiResult.aggregations,
-                                    apiResultHostPublicationDateByVolumeAndIssue.aggregations,
-                                    apiResultPublicationDateByVolumeAndIssue.aggregations)
-                  : [];
+          if (reviewData[model.type] === 'monograph'
+              && _.get(apiResult.hits, '0.host.genre') === 'book'
+              && _.get(apiResult.aggregations, ['host.volume', 'buckets'], []).length > 1
+          ) {
+            logWarning(
+              `Multiple volume ref. for monograph, `
+              + `_id: ${_.get(reviewData, '_id', 'UNSET').warning}, `
+              + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
+              + `query: ${_.get(reviewData, '_query', 'UNSET').muted}`
+            );
 
-                let titleUrl = new URL(reviewUrl);
-                titleUrl.pathname = reviewData.uri;
+            return;
+          }
+          if (!reviewData.uri) {
+            logWarning(`Missing Uri in Summary review data object id:${reviewData._id}\n`, reviewData);
+          }
+          const coverages = reviewData[model.type] === 'serial'
+            ? _buildCoverages(apiResult.aggregations,
+                              apiResultHostPublicationDateByVolumeAndIssue.aggregations,
+                              apiResultPublicationDateByVolumeAndIssue.aggregations)
+            : [];
 
-                generatedExchangeObject += 1;
+          let titleUrl = new URL(reviewUrl);
+          titleUrl.pathname = reviewData.uri;
 
-                return {
-                  _coverages                     : coverages,
-                  publication_title              : reviewData[model.title],
-                  publication_type               : reviewData[model.type],
-                  coverage_depth                 : 'fulltext',
-                  print_identifier               : reviewData[model.type] === SERIAL ? reviewData[model.issn] : reviewData[model.isbn],
-                  online_identifier              : reviewData[model.type] === SERIAL ? reviewData[model.eIssn] : reviewData[model.eIsbn],
-                  title_url                      : titleUrl.toString(),
-                  first_author                   : reviewData[model.type] === MONOGRAPH && reviewData[model.contributor] || null,
-                  title_id                       : reviewData[model.titleId],
-                  notes                          : _tagFollowedBy(reviewData[model.followedBy]),
-                  parent_publication_title_id    : _findTitleId(reviewData[model.parentPublicationTitleId]),
-                  preceding_publication_title_id : _findTitleId(reviewData[model.precededBy]),
-                  access_type                    : reviewData[model.rights],
-                  publisher_name                 : reviewData[model.publisher],
-                  monograph_volume               : _getMonographVolume(reviewData, apiResult),
-                  date_monograph_published_print : _getDateMonographPublishedPrint(reviewData, apiResult),
-                  date_monograph_published_online: _getDateMonographPublishedOnline(reviewData, apiResult)
-                };
-              }),
-            hl.errors((err, push) => {
-              doLogError && logError(err);
-              push(err);
-            }),
-            hl.compact()
-          );
+          generatedExchangeObject += 1;
+
+          return {
+            _coverages                     : coverages,
+            publication_title              : reviewData[model.title],
+            publication_type               : reviewData[model.type],
+            coverage_depth                 : 'fulltext',
+            print_identifier               : reviewData[model.type] === SERIAL ? reviewData[model.issn] : reviewData[model.isbn],
+            online_identifier              : reviewData[model.type] === SERIAL ? reviewData[model.eIssn] : reviewData[model.eIsbn],
+            title_url                      : titleUrl.toString(),
+            first_author                   : reviewData[model.type] === MONOGRAPH && reviewData[model.contributor] || null,
+            title_id                       : reviewData[model.titleId],
+            notes                          : _tagFollowedBy(reviewData[model.followedBy]),
+            parent_publication_title_id    : _findTitleId(reviewData[model.parentPublicationTitleId]),
+            preceding_publication_title_id : _findTitleId(reviewData[model.precededBy]),
+            access_type                    : reviewData[model.rights],
+            publisher_name                 : reviewData[model.publisher],
+            monograph_volume               : _getMonographVolume(reviewData, apiResult),
+            date_monograph_published_print : _getDateMonographPublishedPrint(reviewData, apiResult),
+            date_monograph_published_online: _getDateMonographPublishedOnline(reviewData, apiResult)
+          };
+        })
+      .errors((err, push) => {
+        doLogError && logError(err);
+        push(err);
+      })
+      .compact()
+      //.once('data', () => {
+      //  startDate = new Date();
+      //  startTime = process.hrtime.bigint();
+      //})
+      //.once('end', () => {doLogEndInfo && info();})
+      ;
+
+
+    function duckTypeReviewData (data) {
+      // we ducktype the first Data upstream to check if its a reviewData Object
+      const dataKeys     = _.keys(data),
+            expectedKeys = reviewDuckTyping.map(key => model[key]),
+            keysDiff     = _.difference(expectedKeys, dataKeys)
+      ;
+
+      duckTypeReviewData.once = true;
+
+      if (keysDiff.length !== 0) throw new VError(
+        'Wrong data type, expecting that: %s, to includes this keys: %s, missing: %s',
+        JSON.stringify(data),
+        JSON.stringify(expectedKeys),
+        JSON.stringify(keysDiff)
+      );
+    }
+  };
 
   /**
    *
@@ -199,31 +222,6 @@ function exchange ({
     logInfo('start date: ', startDate);
     doTagEndDate && logInfo('end date: ', new Date());
   }
-
-  pipeline.once('pipe',
-                (stream) => {
-                  stream.once('data', (data) => {
-                    startDate = new Date();
-                    startTime = process.hrtime.bigint();
-
-                    // we ducktype the first Data upstream to check if its a reviewData Object
-                    const dataKeys     = _.keys(data),
-                          expectedKeys = reviewDuckTyping.map(key => model[key]),
-                          keysDiff     = _.difference(expectedKeys, dataKeys)
-                    ;
-
-                    if (keysDiff.length !== 0) throw new VError(
-                      'Wrong data type, expecting that: %s, to includes this keys: %s, missing: %s',
-                      JSON.stringify(data),
-                      JSON.stringify(expectedKeys),
-                      JSON.stringify(keysDiff)
-                    );
-                  });
-                });
-
-  pipeline.once('end', () => {doLogEndInfo && info();});
-
-  return pipeline;
 }
 
 /* private helpers */
