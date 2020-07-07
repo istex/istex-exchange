@@ -24,11 +24,11 @@ describe('Exchange', function() {
     const onceFinished = onceDone(done);
     const exchanger = exchange({parallel, doProfile: true, doWarn: true, doLogEndInfo: true, doLogError: false});
 
-   return  findDocumentsBy({type: SERIAL, maxSize})
+    return findDocumentsBy({type: SERIAL, maxSize})
       .through(exchanger)
       .stopOnError(onceFinished)
       .done(onceFinished)
-    ;
+      ;
 
   });
 
@@ -40,10 +40,9 @@ describe('Exchange', function() {
     this.timeout(expectedTimeout);
     console.info('Expected timeout: ', expectedTimeout);
 
-    const exchanger = exchange({doProfile: true, doWarn: true, doLogError: false, doLogEndInfo: true});
+    const exchanger = exchange({doProfile: true, doWarn: true});
     const onceFinished = onceDone(done);
     let result = '';
-
 
     findDocumentsBy({
                       [model.uri]: 'ark:/67375/8Q1-32DSDVT8-D'

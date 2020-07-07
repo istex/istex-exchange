@@ -26,7 +26,8 @@ module.exports.exchange = exchange;
 
 
 /**
- * @param reviewUrl String the base url of Summary review
+ * @param reviewUrl String the base url of Summary review usefull to build kbart title url
+ * @param apiUrl String the base url of Istex api, used for querying data for kbart building
  * @param parallel Number nb of parallel stream
  * @param doProfile Boolean wrap some function with a profiler to get performance info
  * @param doWarn Boolean log warnings
@@ -37,6 +38,7 @@ module.exports.exchange = exchange;
  */
 function exchange ({
                      reviewUrl = istex.review.url,
+                     apiUrl = istex.api.url,
                      parallel = app.parallel,
                      doProfile = app.doProfile,
                      doWarn = false,
@@ -78,6 +80,7 @@ function exchange ({
           reviewData._query = apiQuery;
 
           const apiSearchIssueByVolume = findDocumentsBy({
+                                                           apiUrl,
                                                            apiQuery,
                                                            size  : 1,
                                                            output: 'host,publicationDate,author',

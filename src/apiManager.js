@@ -10,9 +10,9 @@ const apiClient              = require('./client').getApiClient(),
 
 module.exports.findDocumentsBy = findDocumentsBy;
 
-function findDocumentsBy ({apiQuery = '*', size, output, facet} = {}) {
-  const apiUrl = new URL('document', istex.api.url);
-  apiUrl.search = new URLSearchParams(omitBy({
+function findDocumentsBy ({apiUrl = istex.api.url, apiQuery = '*', size, output, facet} = {}) {
+  const istexApiUrl = new URL('document', apiUrl);
+  istexApiUrl.search = new URLSearchParams(omitBy({
                                                'q'     : apiQuery,
                                                'size'  : size,
                                                'output': output,
@@ -20,6 +20,6 @@ function findDocumentsBy ({apiQuery = '*', size, output, facet} = {}) {
                                                'sid'   : app.sid
                                              }, isNil));
 
-  return hl(apiClient.get(apiUrl).json());
+  return hl(apiClient.get(istexApiUrl).json());
 }
 
