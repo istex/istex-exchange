@@ -22,16 +22,45 @@ describe('Exchange', function() {
     console.info('Expected timeout: ', expectedTimeout);
 
     const onceFinished = onceDone(done);
-    const exchanger = exchange({parallel, doProfile: true, doWarn: true, doLogEndInfo: true, doLogError: false});
+    const exchanger = exchange({parallel, doWarn: true, doLogError: false});
+    let resultCount = 0;
 
-    return findDocumentsBy({type: SERIAL, maxSize})
+    return findDocumentsBy({type: MONOGRAPH, maxSize})
       .through(exchanger)
       .stopOnError(onceFinished)
-      .done(onceFinished)
+      .doto(() => ++resultCount)
+      .done(() => {
+        resultCount.should.be.aboveOrEqual(1);
+        onceFinished();
+      })
       ;
 
   });
+  it('Should compute exchange for ark:/67375/8Q1-5TR7LXKC-1', function(done) {
 
+    const maxSize  = 50,
+          parallel = 20
+    ;
+
+    const expectedTimeout = getExpectedTimeout({maxSize, parallel});
+
+    this.timeout(expectedTimeout);
+    console.info('Expected timeout: ', expectedTimeout);
+
+    const onceFinished = onceDone(done);
+    const exchanger = exchange({parallel, doWarn: true, doLogError: false});
+    let resultCount = 0;
+    return findDocumentsBy({uri: 'ark:/67375/8Q1-5TR7LXKC-1', maxSize})
+      .through(exchanger)
+      .stopOnError(onceFinished)
+      .doto(() => ++resultCount)
+      .done(() => {
+        resultCount.should.equal(1);
+        onceFinished();
+      })
+      ;
+
+  });
 
   it('Should stream headers and kbart lines', function(done) {
 
@@ -40,7 +69,7 @@ describe('Exchange', function() {
     this.timeout(expectedTimeout);
     console.info('Expected timeout: ', expectedTimeout);
 
-    const exchanger = exchange({doProfile: true, doWarn: true});
+    const exchanger = exchange({doWarn: true});
     const onceFinished = onceDone(done);
     let result = '';
 

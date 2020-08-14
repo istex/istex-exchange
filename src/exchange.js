@@ -5,7 +5,6 @@ const {istex, nodejs, app}            = require('config-component').get(module),
       _                               = require('lodash'),
       {logWarning, logError, logInfo} = require('../helpers/logger'),
       buildCoverages                  = require('./buildCoverages'),
-      profile                         = require('../helpers/profile'),
       {
         model,
         duckTyping: reviewDuckTyping,
@@ -32,7 +31,6 @@ module.exports.exchange = exchange;
  * @param doProfile Boolean wrap some function with a profiler to get performance info
  * @param doWarn Boolean log warnings
  * @params doLogError Boolean log errors
- * @params doLogEndInfo Boolean log info and stats at the end of the process
  * @returns through function
  *
  */
@@ -40,17 +38,10 @@ function exchange ({
                      reviewUrl = istex.review.url,
                      apiUrl = istex.api.url,
                      parallel = app.parallel,
-                     doProfile = app.doProfile,
-                     doWarn = false,
-                     doLogError = true
+                     doWarn = app.doWarn,
+                     doLogError = app.doLogError
                    } = {}) {
-  let startDate               = 0,
-      startTime               = process.hrtime.bigint(),
-      generatedExchangeObject = 0,
-      expectedExchangeObject  = 0
-  ;
 
-  const _buildCoverages = profile(buildCoverages, doProfile);
   logWarning.doWarn = doWarn;
 
   return function(s) {
@@ -60,7 +51,6 @@ function exchange ({
           if (!duckTypeReviewData.once) duckTypeReviewData(reviewData);
 
           let apiQuery;
-          expectedExchangeObject++;
           if (!reviewData._id) {
             logWarning(`Invalid Summary review data object, missing _Id.`);
             return;
@@ -73,7 +63,7 @@ function exchange ({
             return;
           }
 
-          if (!~reviewData[model.istexQuery].indexOf('publicationDate')) {
+          if (!~reviewData[model.istexQuery].indexOf('publicationDate') && reviewData[model.startDate] && reviewData[model.endDate]) {
             apiQuery += ` AND publicationDate:[${reviewData[model.startDate] || '*'} TO ${reviewData[model.endDate] || '*'}]`;
           }
 
@@ -153,15 +143,14 @@ function exchange ({
             logWarning(`Missing Uri in Summary review data object id:${reviewData._id}\n`, reviewData);
           }
           const coverages = reviewData[model.type] === 'serial'
-            ? _buildCoverages(apiResult.aggregations,
-                              apiResultHostPublicationDateByVolumeAndIssue.aggregations,
-                              apiResultPublicationDateByVolumeAndIssue.aggregations)
+            ? buildCoverages(apiResult.aggregations,
+                             apiResultHostPublicationDateByVolumeAndIssue.aggregations,
+                             apiResultPublicationDateByVolumeAndIssue.aggregations)
             : [];
 
           let titleUrl = new URL(reviewUrl);
           titleUrl.pathname = reviewData.uri;
 
-          generatedExchangeObject += 1;
 
           return {
             _coverages                     : coverages,
@@ -188,11 +177,6 @@ function exchange ({
         push(err);
       })
       .compact()
-      //.once('data', () => {
-      //  startDate = new Date();
-      //  startTime = process.hrtime.bigint();
-      //})
-      //.once('end', () => {doLogEndInfo && info();})
       ;
 
 
@@ -213,18 +197,6 @@ function exchange ({
       );
     }
   };
-
-  /**
-   *
-   * @param doTagEndDate Date tag the end date of the process
-   */
-  function info (doTagEndDate = true) {
-    logInfo(_buildCoverages.report());
-    logInfo(`Generated exchange object: ${generatedExchangeObject}/${expectedExchangeObject}`);
-    logInfo(`Elapsed time: ${ Number(process.hrtime.bigint() - startTime) / 1E6} ms`);
-    logInfo('start date: ', startDate);
-    doTagEndDate && logInfo('end date: ', new Date());
-  }
 }
 
 /* private helpers */
