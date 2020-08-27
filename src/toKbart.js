@@ -6,8 +6,8 @@ const _         = require('lodash'),
 
 
 module.exports.toKbart = function({header = true} = {}) {
+  const stringifier = stringify({header, delimiter: '\t', columns: fields});
   return function(s) {
-    const stringifier = stringify({header, delimiter: '\t', columns: fields});
     return s.map(_unfoldExchangeData)
             .flatten()
             .through(stringifier)
@@ -18,7 +18,7 @@ module.exports.toKbart = function({header = true} = {}) {
 
 // private helpers
 function _unfoldExchangeData (exchangeData) {
-  if (!exchangeData._coverages.length) return _.omit(exchangeData, ['_coverages']);
+  if (!_.get(exchangeData, ['_coverages', 'length'], false)) return _.omit(exchangeData, ['_coverages']);
   return _.chain(exchangeData._coverages)
           .transform((result, coverage) => {
                        const unfoldCoverage = _.chain(exchangeData)

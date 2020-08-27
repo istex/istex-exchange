@@ -1,10 +1,10 @@
 'use strict';
 
-const {istex, nodejs, app}            = require('config-component').get(module),
-      hl                              = require('highland'),
-      _                               = require('lodash'),
-      {logWarning, logError, logInfo} = require('../helpers/logger'),
-      buildCoverages                  = require('./buildCoverages'),
+const {istex, nodejs, app}   = require('config-component').get(module),
+      hl                     = require('highland'),
+      _                      = require('lodash'),
+      {logWarning, logError} = require('../helpers/logger'),
+      buildCoverages         = require('./buildCoverages'),
       {
         model,
         duckTyping: reviewDuckTyping,
@@ -12,10 +12,10 @@ const {istex, nodejs, app}            = require('config-component').get(module),
         MONOGRAPH,
         issnShape,
         syndicationFromModel
-      }                               = require('./reviewModel'),
-      {findDocumentsBy}               = require('./apiManager'),
-      {URL}                           = require('url'),
-      VError                          = require('verror')
+      }                      = require('./reviewModel'),
+      {findDocumentsBy}      = require('./apiManager'),
+      {URL}                  = require('url'),
+      VError                 = require('verror')
 ;
 
 Error.stackTraceLimit = nodejs.stackTraceLimit || Error.stackTraceLimit;
@@ -28,9 +28,10 @@ module.exports.exchange = exchange;
  * @param reviewUrl String the base url of Summary review usefull to build kbart title url
  * @param apiUrl String the base url of Istex api, used for querying data for kbart building
  * @param parallel Number nb of parallel stream
- * @param doProfile Boolean wrap some function with a profiler to get performance info
+ * @ param doFrameByPublicationDate Boolean Frame queries to Istex API with start Date and end Date
  * @param doWarn Boolean log warnings
  * @params doLogError Boolean log errors
+ *
  * @returns through function
  *
  */
@@ -38,6 +39,7 @@ function exchange ({
                      reviewUrl = istex.review.url,
                      apiUrl = istex.api.url,
                      parallel = app.parallel,
+                     doFrameByPublicationDate = app.doFrameByPublicationDate,
                      doWarn = app.doWarn,
                      doLogError = app.doLogError
                    } = {}) {
@@ -52,18 +54,22 @@ function exchange ({
 
           let apiQuery;
           if (!reviewData._id) {
-            logWarning(`Invalid Summary review data object, missing _Id.`);
+            logWarning(_formatReviewDataWarning(`Invalid Summary review data object, missing _id. `, reviewData));
             return;
           }
 
           if (!(apiQuery = reviewData[model.istexQuery])) {
-            logWarning(`Invalid Summary review data object _id: ${reviewData._id.warning}, `
-                       + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
-                       + `missing Istex query.`);
+            logWarning(_formatReviewDataWarning(`Invalid Summary review data object, missing istexQuery. `,
+                                                reviewData));
+
             return;
           }
 
-          if (!~reviewData[model.istexQuery].indexOf('publicationDate') && reviewData[model.startDate] && reviewData[model.endDate]) {
+          if (!~reviewData[model.istexQuery].indexOf('publicationDate')
+              && doFrameByPublicationDate
+              && reviewData[model.startDate]
+              && reviewData[model.endDate]
+          ) {
             apiQuery += ` AND publicationDate:[${reviewData[model.startDate] || '*'} TO ${reviewData[model.endDate] || '*'}]`;
           }
 
@@ -116,12 +122,7 @@ function exchange ({
       .map(
         ([apiResult, reviewData, apiResultHostPublicationDateByVolumeAndIssue, apiResultPublicationDateByVolumeAndIssue]) => {
           if (apiResult.total === 0) {
-            logWarning(
-              `No Istex API result for Summary review data object _id: `
-              + `${_.get(reviewData, '_id', 'UNSET').warning}, `
-              + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
-              + `query: ${_.get(reviewData, '_query', 'UNSET').muted}`
-            );
+            logWarning(_formatReviewDataWarning(`No Istex API result for Summary review data object, `, reviewData));
 
             return;
           }
@@ -130,17 +131,12 @@ function exchange ({
               && _.get(apiResult.hits, '0.host.genre') === 'book'
               && _.get(apiResult.aggregations, ['host.volume', 'buckets'], []).length > 1
           ) {
-            logWarning(
-              `Multiple volume ref. for monograph, `
-              + `_id: ${_.get(reviewData, '_id', 'UNSET').warning}, `
-              + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
-              + `query: ${_.get(reviewData, '_query', 'UNSET').muted}`
-            );
+            logWarning(_formatReviewDataWarning(`Multiple volume ref. for monograph, `, reviewData));
 
             return;
           }
           if (!reviewData.uri) {
-            logWarning(`Missing Uri in Summary review data object id:${reviewData._id}\n`, reviewData);
+            logWarning(_formatReviewDataWarning(`Missing Uri in Summary review data object id, `, reviewData));
           }
           const coverages = reviewData[model.type] === 'serial'
             ? buildCoverages(apiResult.aggregations,
@@ -200,6 +196,14 @@ function exchange ({
 }
 
 /* private helpers */
+function _formatReviewDataWarning (message, reviewData) {
+  return `${message}`
+         + `_id: ${_.get(reviewData, '_id', 'UNSET').toString().warning}, `
+         + `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, `
+         + `query: ${_.get(reviewData, '_query', 'UNSET').muted}`
+    ;
+}
+
 function _tagFollowedBy (value) {
   let titleId;
   if (!(titleId = _findTitleId(value))) return '';

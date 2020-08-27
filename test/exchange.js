@@ -36,6 +36,7 @@ describe('Exchange', function() {
       ;
 
   });
+
   it('Should compute exchange for ark:/67375/8Q1-5TR7LXKC-1', function(done) {
 
     const maxSize  = 50,
@@ -62,6 +63,34 @@ describe('Exchange', function() {
 
   });
 
+  it('Should compute basics Kbart frame even with no results, for ark:/67375/8Q1-Q29MRC5R-R', function(done) {
+
+    const maxSize  = 50,
+          parallel = 20
+    ;
+
+    const expectedTimeout = getExpectedTimeout({maxSize, parallel});
+
+    this.timeout(expectedTimeout);
+    console.info('Expected timeout: ', expectedTimeout);
+
+    const onceFinished = onceDone(done);
+    const exchanger = exchange({parallel, doWarn: true, doLogError: false});
+    let result = '';
+
+    return findDocumentsBy({uri: 'ark:/67375/8Q1-Q29MRC5R-R', maxSize})
+      .through(exchanger)
+      .through(toKbart())
+      .stopOnError(onceFinished)
+      .doto((kbartLine) => {result += kbartLine;})
+      .done(() => {
+        result.should.equal(expectedResult.emptyKbart);
+        onceFinished();
+      })
+      ;
+
+  });
+
   it('Should stream headers and kbart lines', function(done) {
 
 
@@ -69,7 +98,7 @@ describe('Exchange', function() {
     this.timeout(expectedTimeout);
     console.info('Expected timeout: ', expectedTimeout);
 
-    const exchanger = exchange({doWarn: true});
+    const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
     const onceFinished = onceDone(done);
     let result = '';
 
@@ -91,7 +120,7 @@ describe('Exchange', function() {
 });
 
 // Helpers
-function getExpectedTimeout ({maxSize = 1, parallel = app.parallel} = {}) {
+function getExpectedTimeout ({maxSize = 1} = {}) {
   return Math.round(
     Math.max(
       1.5 * (maxSize * testSuit.expectedAvgTimeByIteration + istex.api.timeout.response),

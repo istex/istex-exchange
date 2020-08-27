@@ -3,6 +3,3 @@
 
 imports:
   - resource: config.yml
-
-app:
-  doProfile: true

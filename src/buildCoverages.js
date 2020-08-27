@@ -30,11 +30,11 @@ function buildCoverages (aggsIssueByVolume = [], aggsHostPublicationDateByVolume
   if (hasIssue && !hasVolume) {
 
     coverages.push({
-                     num_first_issue_online     : hostPublicationDateByIssue[0].key || null,
-                     num_first_vol_online    : null,
+                     num_first_issue_online : hostPublicationDateByIssue[0].key || null,
+                     num_first_vol_online   : null,
                      date_first_issue_online: _getDateFirstIssue(hostPublicationDateByIssue, publicationDateByIssue),
-                     num_last_issue_online      : hostPublicationDateByIssue[hostPublicationDateByIssue.length - 1].key || null,
-                     num_last_vol_online     : null,
+                     num_last_issue_online  : hostPublicationDateByIssue[hostPublicationDateByIssue.length - 1].key || null,
+                     num_last_vol_online    : null,
                      date_last_issue_online : _getDateLastIssue(hostPublicationDateByIssue, publicationDateByIssue)
                    });
 
@@ -54,13 +54,13 @@ function buildCoverages (aggsIssueByVolume = [], aggsHostPublicationDateByVolume
       if (issueByVolume[i].docCount > 0) {
 
         coverages.push({
-                         num_first_issue_online     : hasIssue ? _searchFirstIssue(issueByVolume[i]) : null,
-                         num_first_vol_online    : issueByVolume[i].key,
+                         num_first_issue_online : hasIssue ? _searchFirstIssue(issueByVolume[i]) : null,
+                         num_first_vol_online   : issueByVolume[i].key,
                          date_first_issue_online: _getDateFirstIssueByVolume(i,
-                                                                      hostPublicationDateByVolume,
-                                                                      publicationDateByVolume),
-                         num_last_issue_online      : null,
-                         num_last_vol_online     : null,
+                                                                             hostPublicationDateByVolume,
+                                                                             publicationDateByVolume),
+                         num_last_issue_online  : null,
+                         num_last_vol_online    : null,
                          date_last_issue_online : null
                        });
 
@@ -71,8 +71,8 @@ function buildCoverages (aggsIssueByVolume = [], aggsHostPublicationDateByVolume
           currentCoverage.num_last_issue_online = hasIssue ? _searchLastIssue(issueByVolume[i]) : null;
           currentCoverage.num_last_vol_online = currentCoverage.num_first_vol_online;
           currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(i,
-                                                                      hostPublicationDateByVolume,
-                                                                      publicationDateByVolume);
+                                                                             hostPublicationDateByVolume,
+                                                                             publicationDateByVolume);
 
         }
       }
@@ -86,8 +86,8 @@ function buildCoverages (aggsIssueByVolume = [], aggsHostPublicationDateByVolume
         currentCoverage.num_last_issue_online = hasIssue ? _searchLastIssue(issueByVolume[i - 1]) : null;
         currentCoverage.num_last_vol_online = issueByVolume[i - 1].key;
         currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(i - 1,
-                                                                    hostPublicationDateByVolume,
-                                                                    publicationDateByVolume);
+                                                                           hostPublicationDateByVolume,
+                                                                           publicationDateByVolume);
         searchFor = START;
         continue;
       }
@@ -97,7 +97,9 @@ function buildCoverages (aggsIssueByVolume = [], aggsHostPublicationDateByVolume
         let currentCoverage = coverages[coverages.length - 1];
         currentCoverage.num_last_issue_online = hasIssue ? _searchLastIssue(issueByVolume[i]) : null;
         currentCoverage.num_last_vol_online = issueByVolume[i].key;
-        currentCoverage.date_last_issue_online =  _getDateLastIssueByVolume(i, hostPublicationDateByVolume, publicationDateByVolume);
+        currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(i,
+                                                                           hostPublicationDateByVolume,
+                                                                           publicationDateByVolume);
 
         searchFor = START;
         continue;

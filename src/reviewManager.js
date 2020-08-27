@@ -9,7 +9,6 @@ const reviewClient           = require('./client').getReviewClient(),
       {parser}               = require('stream-json'),
       {streamArray}          = require('stream-json/streamers/StreamArray'),
       {pick}                 = require('stream-json/filters/Pick'),
-      {logError}             = require('../helpers/logger'),
       VError                 = require('verror')
 ;
 
