@@ -3,5 +3,5 @@
 module.exports = {
   exchange     : require('./src/exchange').exchange,
   toKbart      : require('./src/toKbart').toKbart,
-  reviewManager: require('./src/reviewManager')
+  toXmlHoldings: require('./src/toXmlHoldings').toXmlHoldings
 };

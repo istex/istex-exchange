@@ -8,13 +8,9 @@ const {istex, nodejs, app}   = require('config-component').get(module),
       {
         model,
         duckTyping: reviewDuckTyping,
-        SERIAL,
-        MONOGRAPH,
-        issnShape,
-        syndicationFromModel
+        SERIAL
       }                      = require('./reviewModel'),
       {findDocumentsBy}      = require('./apiManager'),
-      {URL}                  = require('url'),
       VError                 = require('verror')
 ;
 
@@ -28,9 +24,9 @@ module.exports.exchange = exchange;
  * @param reviewUrl String the base url of Summary review usefull to build kbart title url
  * @param apiUrl String the base url of Istex api, used for querying data for kbart building
  * @param parallel Number nb of parallel stream
- * @ param doFrameByPublicationDate Boolean Frame queries to Istex API with start Date and end Date
+ * @param doFrameByPublicationDate Boolean Frame queries to Istex API with start Date and end Date
  * @param doWarn Boolean log warnings
- * @params doLogError Boolean log errors
+ * @param doLogError Boolean log errors
  *
  * @returns through function
  *
@@ -135,7 +131,7 @@ function exchange ({
 
             return;
           }
-          if (!reviewData.uri) {
+          if (!reviewData[model.uri]) {
             logWarning(_formatReviewDataWarning(`Missing Uri in Summary review data object id, `, reviewData));
           }
           const coverages = reviewData[model.type] === 'serial'
@@ -144,28 +140,11 @@ function exchange ({
                              apiResultPublicationDateByVolumeAndIssue.aggregations)
             : [];
 
-          let titleUrl = new URL(reviewUrl);
-          titleUrl.pathname = reviewData.uri;
-
-
           return {
-            _coverages                     : coverages,
-            publication_title              : reviewData[model.title],
-            publication_type               : reviewData[model.type],
-            coverage_depth                 : 'fulltext',
-            print_identifier               : reviewData[model.type] === SERIAL ? reviewData[model.issn] : reviewData[model.isbn],
-            online_identifier              : reviewData[model.type] === SERIAL ? reviewData[model.eIssn] : reviewData[model.eIsbn],
-            title_url                      : titleUrl.toString(),
-            first_author                   : reviewData[model.type] === MONOGRAPH && reviewData[model.contributor] || null,
-            title_id                       : reviewData[model.titleId],
-            notes                          : _tagFollowedBy(reviewData[model.followedBy]),
-            parent_publication_title_id    : _findTitleId(reviewData[model.parentPublicationTitleId]),
-            preceding_publication_title_id : _findTitleId(reviewData[model.precededBy]),
-            access_type                    : reviewData[model.rights],
-            publisher_name                 : reviewData[model.publisher],
-            monograph_volume               : _getMonographVolume(reviewData, apiResult),
-            date_monograph_published_print : _getDateMonographPublishedPrint(reviewData, apiResult),
-            date_monograph_published_online: _getDateMonographPublishedOnline(reviewData, apiResult)
+            coverages,
+            reviewData,
+            apiResult,
+            reviewUrl
           };
         })
       .errors((err, push) => {
@@ -204,48 +183,5 @@ function _formatReviewDataWarning (message, reviewData) {
     ;
 }
 
-function _tagFollowedBy (value) {
-  let titleId;
-  if (!(titleId = _findTitleId(value))) return '';
-  return `followed by: ${titleId}`;
-}
-
-function _findTitleId (value) {
-  if (typeof value !== 'string' || value === '' || !value.startsWith(syndicationFromModel)) return null;
-  return value.slice(-issnShape.length);
-}
-
-function _getMonographVolume (reviewData, apiResult) {
-  if (reviewData[model.type] !== MONOGRAPH) return null;
-  // we try to get volume number even if the initial data is not mere number
-  const volume = parseInt(_.get(apiResult, 'hits.0.host.volume', null));
-  if (isNaN(volume)) return null;
-
-  return volume;
-}
-
-function _getDateMonographPublishedPrint (reviewData, apiResult) {
-  if (reviewData[model.type] !== MONOGRAPH || !reviewData[model.isbn]) return null;
-  let monographDate = _.get(apiResult, 'hits.0.publicationDate', null);
-
-  if (!monographDate && !reviewData[model.eisbn]) {
-    monographDate = _.get(apiResult, 'hits.0.host.publicationDate', null);
-  }
-
-  return monographDate;
-}
-
-function _getDateMonographPublishedOnline (reviewData, apiResult) {
-  if (reviewData[model.type] !== MONOGRAPH || !reviewData[model.eIsbn]) return null;
-  const monographDate = _.get(apiResult,
-                              'hits.0.host.publicationDate',
-                              _.get(apiResult, 'hits.0.publicationDate', null)
-  );
-
-  // a bit of guessing, probably not the best way
-  if (!monographDate.startsWith('20') && !monographDate.startsWith('21')) return null;
-
-  return monographDate;
-}
 
 

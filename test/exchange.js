@@ -3,9 +3,11 @@
 const should                     = require('should'),
       {exchange}                 = require('../src/exchange'),
       {toKbart}                  = require('../src/toKbart'),
+      {toXmlHoldings}            = require('../src/toXmlHoldings'),
+      {validateXMLWithDTD} = require('validate-with-xmllint'),
       {findDocumentsBy}          = require('../src/reviewManager'),
-      {MONOGRAPH, SERIAL, model} = require('../src/reviewModel'),
-      {app, testSuit, istex}     = require('config-component').get(module),
+      {MONOGRAPH} = require('../src/reviewModel'),
+      {testSuit, istex}     = require('config-component').get(module),
       expectedResult             = require('./expectedResult')
 ;
 
@@ -103,7 +105,7 @@ describe('Exchange', function() {
     let result = '';
 
     findDocumentsBy({
-                      [model.uri]: 'ark:/67375/8Q1-32DSDVT8-D'
+                      uri: 'ark:/67375/8Q1-32DSDVT8-D'
                     })
       .through(exchanger)
       .through(toKbart())
@@ -116,6 +118,59 @@ describe('Exchange', function() {
     ;
 
   });
+
+  describe('toXmlHoldings', function() {
+    it('Should stream xmlHoldings', function(done) {
+
+      const expectedTimeout = getExpectedTimeout();
+      this.timeout(expectedTimeout);
+      console.info('Expected timeout: ', expectedTimeout);
+
+      const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
+      const onceFinished = onceDone(done);
+      let result = '';
+
+      findDocumentsBy({
+                        uri: 'ark:/67375/8Q1-32DSDVT8-D'
+                      })
+        .through(exchanger)
+        .through(toXmlHoldings())
+        .doto((xmlHolding) => {result += xmlHolding;})
+        .stopOnError(onceFinished)
+        .done(() => {
+          result.should.equal(expectedResult.toXmlHoldings);
+          onceFinished();
+        })
+      ;
+
+    });
+
+    it('Should produce valid xmlHoldings', function(done) {
+
+      const expectedTimeout = getExpectedTimeout();
+      this.timeout(expectedTimeout);
+      console.info('Expected timeout: ', expectedTimeout);
+
+      const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
+      const onceFinished = onceDone(done);
+      let result = '';
+
+      findDocumentsBy({
+                        corpus: 'rsl'
+                      })
+        .through(exchanger)
+        .through(toXmlHoldings({dtd:'./test/resources/institutional_holdings.dtd'}))
+        .doto((xmlHolding) => {result += xmlHolding;})
+        .stopOnError(onceFinished)
+        .done(() => {
+          validateXMLWithDTD(result)
+            .then(onceFinished)
+            .catch(onceFinished)
+          ;
+        });
+    });
+  });
+
 
 });
 

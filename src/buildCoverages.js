@@ -9,7 +9,10 @@ buildCoverages.issueByVolume = 'host.volume[*-*:1]>host.issue[*-*:1]';
 buildCoverages.hostPublicationDateByVolumeAndIssue = 'host.volume[*-*:1]>host.publicationDate[*-*:1],host.issue[*-*:1]>host.publicationDate[*-*:1]';
 buildCoverages.publicationDateByVolumeAndIssue = 'host.volume[*-*:1]>publicationDate[*-*:1],host.issue[*-*:1]>publicationDate[*-*:1]';
 
-function buildCoverages (aggsIssueByVolume = [], aggsHostPublicationDateByVolumeAndIssue = [], aggsPublicationDateByVolumeAndIssue = []) {
+function buildCoverages (aggsIssueByVolume                       = [],
+                         aggsHostPublicationDateByVolumeAndIssue = [],
+                         aggsPublicationDateByVolumeAndIssue     = []) {
+
   const issueByVolume               = _.get(aggsIssueByVolume, ['host.volume', 'buckets'], []),
         hostPublicationDateByIssue  = _.get(aggsHostPublicationDateByVolumeAndIssue, ['host.issue', 'buckets'], []),
         hostPublicationDateByVolume = _.get(aggsHostPublicationDateByVolumeAndIssue, ['host.volume', 'buckets'], []),

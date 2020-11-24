@@ -35,5 +35,9 @@ istex:
     timeout:
      response: 5000 #ms
 
+xmlHoldings:
+  spaces: 0 # Number of spaces to be used for indenting XML output. Passing characters like ' ' or '\t' are also accepted.
+  dtd: http://scholar.google.com/scholar/institutional_holdings.dtd
+
 nodejs:
   stackTraceLimit: 40

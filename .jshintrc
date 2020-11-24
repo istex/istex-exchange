@@ -1,7 +1,7 @@
 {
   "laxbreak": true,
   "eqeqeq": true,
-  "eqnull": false,
+  "eqnull": true,
   "expr": true,
   "quotmark": true,
   "indent": 2,
@@ -9,6 +9,6 @@
   "unused": true,
   "strict": true,
   "validthis": true,
-  "esversion": 6,
+  "esversion": 9,
   "node": true
 }

@@ -1,0 +1,20 @@
+<!-- The DTD for minimal automatic validation of library holdings. -->
+<!-- See http://scholar.google.com/scholar/institutional_holdings.xml . -->
+<!ELEMENT institutional_holdings (item+)>
+<!ELEMENT item (title, issn?, isbn?, coverage*)>
+<!ATTLIST item type (electronic|print) "electronic">
+<!ELEMENT title (#PCDATA)>
+<!ELEMENT issn (#PCDATA)>
+<!ELEMENT isbn (#PCDATA)>
+<!ELEMENT coverage (from?, to?, embargo?, num_libraries?, comment*)>
+<!ELEMENT from (year, month?, volume?, issue?)>
+<!ELEMENT to (year?, month?, volume?, issue?)>
+<!ELEMENT year (#PCDATA)>
+<!ELEMENT month (#PCDATA)>
+<!ELEMENT volume (#PCDATA)>
+<!ELEMENT issue (#PCDATA)>
+<!ELEMENT embargo (days_not_available?, days_available?)>
+<!ELEMENT days_not_available (#PCDATA)>
+<!ELEMENT days_available (#PCDATA)>
+<!ELEMENT num_libraries (#PCDATA)>
+<!ELEMENT comment (#PCDATA)>
