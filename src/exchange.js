@@ -116,37 +116,38 @@ function exchange ({
       .compact()
       .parallel(parallel)
       .map(
-        ([apiResult, reviewData, apiResultHostPublicationDateByVolumeAndIssue, apiResultPublicationDateByVolumeAndIssue]) => {
-          if (apiResult.total === 0) {
-            logWarning(_formatReviewDataWarning(`No Istex API result for Summary review data object, `, reviewData));
+        _try(
+          ([apiResult, reviewData, apiResultHostPublicationDateByVolumeAndIssue, apiResultPublicationDateByVolumeAndIssue]) => {
+            if (apiResult.total === 0) {
+              logWarning(_formatReviewDataWarning(`No Istex API result for Summary review data object, `, reviewData));
 
-            return;
-          }
+              return;
+            }
 
-          if (reviewData[model.type] === 'monograph'
-              && _.get(apiResult.hits, '0.host.genre') === 'book'
-              && _.get(apiResult.aggregations, ['host.volume', 'buckets'], []).length > 1
-          ) {
-            logWarning(_formatReviewDataWarning(`Multiple volume ref. for monograph, `, reviewData));
+            if (reviewData[model.type] === 'monograph'
+                && _.get(apiResult.hits, '0.host.genre') === 'book'
+                && _.get(apiResult.aggregations, ['host.volume', 'buckets'], []).length > 1
+            ) {
+              logWarning(_formatReviewDataWarning(`Multiple volume ref. for monograph, `, reviewData));
 
-            return;
-          }
-          if (!reviewData[model.uri]) {
-            logWarning(_formatReviewDataWarning(`Missing Uri in Summary review data object id, `, reviewData));
-          }
-          const coverages = reviewData[model.type] === 'serial'
-            ? buildCoverages(apiResult.aggregations,
-                             apiResultHostPublicationDateByVolumeAndIssue.aggregations,
-                             apiResultPublicationDateByVolumeAndIssue.aggregations)
-            : [];
+              return;
+            }
+            if (!reviewData[model.uri]) {
+              logWarning(_formatReviewDataWarning(`Missing Uri in Summary review data object id, `, reviewData));
+            }
+            const coverages = reviewData[model.type] === 'serial'
+              ? buildCoverages(apiResult.aggregations,
+                               apiResultHostPublicationDateByVolumeAndIssue.aggregations,
+                               apiResultPublicationDateByVolumeAndIssue.aggregations)
+              : [];
 
-          return {
-            coverages,
-            reviewData,
-            apiResult,
-            reviewUrl
-          };
-        })
+            return {
+              coverages,
+              reviewData,
+              apiResult,
+              reviewUrl
+            };
+          }))
       .errors((err, push) => {
         doLogError && logError(err);
         push(err);
@@ -174,7 +175,20 @@ function exchange ({
   };
 }
 
+
+
 /* private helpers */
+function _try (fn) {
+  return function(args) {
+    try {
+      return fn(args);
+    } catch (error) {
+      error.info = JSON.stringify(args);
+      throw error;
+    }
+  };
+}
+
 function _formatReviewDataWarning (message, reviewData) {
   return `${message}`
          + `_id: ${_.get(reviewData, '_id', 'UNSET').toString().warning}, `
