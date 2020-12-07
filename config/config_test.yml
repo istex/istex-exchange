@@ -3,3 +3,11 @@
 
 imports:
   - resource: config.yml
+
+xmlHoldings:
+  dtd: './test/resources/institutional_holdings.dtd'
+  outputPath: ./test/output/google-scholar
+
+
+xmlLinks:
+  dtd: ./test/resources/institutional_links.dtd

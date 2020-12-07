@@ -15,8 +15,8 @@ app:
   parallel: 15 # nb of reviewData that are processed in parallel, Warning: diminishing returns due to istex.api bottleneck.
 
 testSuit:
-  expectedAvgTimeByIteration: 300 #ms
-  minTimeout: 5000 #ms
+  expectedAvgTimeByIteration: 300 # ms
+  minTimeout: 5000 # ms
 
 istex:
   api:
@@ -33,11 +33,18 @@ istex:
     url: %env(ISTEX_EXCHANGE_REVIEW_URL)%
     # timeout may be Object or Number, @see https://www.npmjs.com/package/got#timeout
     timeout:
-     response: 5000 #ms
+     response: 5000 # ms
 
 xmlHoldings:
   spaces: 0 # Number of spaces to be used for indenting XML output. Passing characters like ' ' or '\t' are also accepted.
   dtd: http://scholar.google.com/scholar/institutional_holdings.dtd
+  maxXmlHoldingsSize: 1MB # limit of the file size by holdings, @see https://github.com/istex/istex-google-scholar/blob/master/resources/reference/institutional_holdings.xml
+  # Supported units : b, kb, mb, gb, tb, pb
+  outputPath: ./output/google-scholar
+
+xmlLinks:
+  dtd: http://scholar.google.com/scholar/institutional_links.dtd
+  baseUrl: https://content-delivery.istex.fr
 
 nodejs:
   stackTraceLimit: 40

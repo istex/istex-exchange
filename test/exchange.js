@@ -1,14 +1,17 @@
 'use strict';
 
-const should                     = require('should'),
-      {exchange}                 = require('../src/exchange'),
-      {toKbart}                  = require('../src/toKbart'),
-      {toXmlHoldings}            = require('../src/toXmlHoldings'),
-      {validateXMLWithDTD} = require('validate-with-xmllint'),
-      {findDocumentsBy}          = require('../src/reviewManager'),
-      {MONOGRAPH} = require('../src/reviewModel'),
-      {testSuit, istex}     = require('config-component').get(module),
-      expectedResult             = require('./expectedResult')
+const should                    = require('should'),
+      {validateXMLWithDTD}      = require('validate-with-xmllint'),
+      {testSuit, istex}         = require('config-component').get(module),
+      fs                        = require('fs-extra'),
+      {exchange}                = require('../src/exchange'),
+      {toKbart}                 = require('../src/toKbart'),
+      {toXmlHoldings}           = require('../src/toXmlHoldings'),
+      {writeXmlHoldings}        = require('../src/writeXmlHoldings'),
+      {buildInstitutionalLinks} = require('../src/buildInstitutionalLinks'),
+      {findDocumentsBy}         = require('../src/reviewManager'),
+      {MONOGRAPH, SERIAL}       = require('../src/reviewModel'),
+      expectedResult            = require('./expectedResult')
 ;
 
 describe('Exchange', function() {
@@ -156,10 +159,11 @@ describe('Exchange', function() {
       let result = '';
 
       findDocumentsBy({
-                        corpus: 'rsl'
+                        corpus : 'rsl',
+                        maxSize: 20
                       })
         .through(exchanger)
-        .through(toXmlHoldings({dtd:'./test/resources/institutional_holdings.dtd'}))
+        .through(toXmlHoldings())
         .doto((xmlHolding) => {result += xmlHolding;})
         .stopOnError(onceFinished)
         .done(() => {
@@ -171,6 +175,57 @@ describe('Exchange', function() {
     });
   });
 
+  describe('writeXmlHoldings', function() {
+    it('Should write xmlHoldings files', function(done) {
+
+      const corpus = {
+        name: 'rsl',
+        size: 11
+      };
+
+      const expectedTimeout = getExpectedTimeout({maxSize: corpus.size});
+      this.timeout(expectedTimeout);
+      console.info('Expected timeout: ', expectedTimeout);
+
+      const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
+      const onceFinished = onceDone(done);
+
+      let result = '';
+
+      findDocumentsBy({
+                        corpus : corpus.name,
+                        maxSize: corpus.size
+                      })
+        .through(exchanger)
+        .through(toXmlHoldings())
+        .through(writeXmlHoldings({corpusName: corpus.name, type: corpus.type}))
+        .doto((xmlHolding) => {result += xmlHolding;})
+        .stopOnError(onceFinished)
+        .done(() => {
+          fs.stat('./test/output/google-scholar/institutional_holdings_RSL_FRANCE_ISTEXJOURNALS-0.xml',
+                  (err) => {
+                    return onceFinished(err);
+                  });
+        })
+      ;
+
+    });
+  });
+
+  describe('buildInstitutionalLinks', function() {
+    it('Should return valid InstitutionalLinks XML', function(done) {
+      const contacts      = ['Bob Geldof <bob.geldof@inist.fr>', 'John Doe <john.doe@inist.fr>'],
+            holdingsFiles = ['./google-scholar/institutional_holdings_RSL_FRANCE_ISTEXJOURNALS-10.xml'],
+            dtd           = './test/resources/institutional_links.dtd'
+      ;
+
+      const xml = buildInstitutionalLinks({contacts, holdingsFiles, dtd});
+      validateXMLWithDTD(xml)
+        .then(done)
+        .catch(done)
+      ;
+    });
+  });
 
 });
 

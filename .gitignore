@@ -1,5 +1,6 @@
 ### Misc ###
 note
+output/
 
 ### Api ###
 .jwt

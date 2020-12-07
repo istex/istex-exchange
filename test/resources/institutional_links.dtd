@@ -1,0 +1,21 @@
+<!-- The DTD for minimal automatic validation of library link config. -->
+        <!-- See http://scholar.google.com/scholar/institutional_links.xml . -->
+        <!ELEMENT institutional_links (institution+, keywords*, contact*,
+                electronic_link_label+, other_link_label+,
+                openurl_base, openurl_option+,
+                patron_ip_range*, patron_ip_required?,
+                electronic_holdings)>
+        <!ELEMENT institution (#PCDATA)>
+        <!ATTLIST institution lang CDATA "en">
+        <!ELEMENT keywords (#PCDATA)>
+        <!ELEMENT contact (#PCDATA)>
+        <!ELEMENT electronic_link_label (#PCDATA)>
+        <!ATTLIST electronic_link_label lang CDATA "en">
+        <!ELEMENT other_link_label (#PCDATA)>
+        <!ATTLIST other_link_label lang CDATA "en">
+        <!ELEMENT openurl_base (#PCDATA)>
+        <!ELEMENT openurl_option (#PCDATA)>
+        <!ELEMENT patron_ip_range (#PCDATA)>
+        <!ELEMENT patron_ip_required (#PCDATA)>
+        <!ELEMENT electronic_holdings (url+)>
+        <!ELEMENT url (#PCDATA)>
