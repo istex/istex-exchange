@@ -1,11 +1,10 @@
 %YAML 1.2
 ---
 
-imports:
-  - resource: secret_parameters.yml
-
 parameters:
   ISTEX_EXCHANGE_USE_CACHE_LOOKUP: true
+  ISTEX_EXCHANGE_API_URL: https://api.istex.fr
+  ISTEX_EXCHANGE_REVIEW_URL: https://revue-sommaire.data.istex.fr
 
 app:
   sid: istex-exchange

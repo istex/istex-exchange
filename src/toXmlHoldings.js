@@ -36,7 +36,7 @@ function _wrapItemsBySizeLimit ({
 
   if (sizeLimit === 0) doBatch = false;
 
-  sizeLimit = Math.max(sizeLimit - prepend.length - append.length, 1);
+  sizeLimit = Math.max(sizeLimit - Buffer.byteLength(prepend, 'utf8') - Buffer.byteLength(append, 'utf8'), 1);
 
 
   return function _batch (err, x, push, next) {
@@ -51,7 +51,7 @@ function _wrapItemsBySizeLimit ({
       push(null, x);
     }
     else {
-      if (doBatch && !doPrepend && (totalLength + x.length) >= sizeLimit) {
+      if (doBatch && !doPrepend && (totalLength + Buffer.byteLength(x, 'utf8')) >= sizeLimit) {
         push(null, append);
         doPrepend = true;
         totalLength = 0;
@@ -62,7 +62,7 @@ function _wrapItemsBySizeLimit ({
         doPrepend = false;
       }
 
-      totalLength += x.length;
+      totalLength += Buffer.byteLength(x, 'utf8');
       push(null, x);
 
       next();

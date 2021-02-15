@@ -37,8 +37,8 @@ function findDocumentsBy ({uri, type, corpus, title, maxSize} = {}) {
     .stopOnError((error, push) => {
       const requestUrl = decodeURIComponent(reviewUrl.toString());
       const verror = VError({cause: error, name: 'ReviewRequestError', info: {reviewUrl}},
-                      'Error requesting: %s',
-                      requestUrl);
+                            'Error requesting: %s',
+                            requestUrl);
       push(verror);
 
     })

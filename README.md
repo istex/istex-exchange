@@ -1,3 +1,3 @@
 # Istex-exchange
 
-Bash command to generate KBART or xml-holdings from istex content.
+Istex-exchange is a bundle of  transform stream and utility function to generate Kbart  and institutional holdings from Lodex powered app, revue-sommaire.istex.fr.
