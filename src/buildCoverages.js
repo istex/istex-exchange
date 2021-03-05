@@ -22,8 +22,7 @@ function buildCoverages (aggsIssueByVolume                       = [],
   const hasIssue  = hostPublicationDateByIssue.length > 0,
         hasVolume = issueByVolume.length > 0
   ;
-
-  if (!hasIssue && !hasVolume) return [];
+  if (!hasIssue && !hasVolume) { return [];}
 
   const coverages = [];
 
@@ -44,40 +43,90 @@ function buildCoverages (aggsIssueByVolume                       = [],
   }
 
 
-// volumes
+// volumes and issues
   const START = 'START',
         END   = 'END'
   ;
   let searchFor = START;
 
   for (let volumeIndex = 0, volumesSize = issueByVolume.length, volumesLastIndex = volumesSize - 1;
-       volumeIndex < volumesLastIndex;
-       ++volumeIndex
+       volumeIndex <= volumesLastIndex;
+       volumeIndex += 1
   ) {
-    if (searchFor === START && issueByVolume[volumeIndex].docCount === 0) continue;
 
-    if (searchFor === END && issueByVolume[volumeIndex].docCount === 0) {
-      let currentCoverage = coverages[coverages.length - 1];
-      currentCoverage.num_last_issue_online = _getLastIssue(issueByVolume[volumeIndex - 1]);
-      currentCoverage.num_last_vol_online = issueByVolume[volumeIndex - 1].key;
-      currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(volumeIndex - 1,
-                                                                         hostPublicationDateByVolume,
-                                                                         publicationDateByVolume);
-      searchFor = START;
-      continue;
+    let issuesDocCountSum = 0;
+    for (let i = 0; i <= issueByVolume[volumeIndex]['host.issue'].buckets.length - 1; i += 1) {
+      issuesDocCountSum += issueByVolume[volumeIndex]['host.issue'].buckets[i].docCount;
     }
 
-    if (searchFor === END && _.chain(issueByVolume[volumeIndex]['host.issue'].buckets)
-                              .first()
-                              .get('key')
-                              .value() !== 1) {
-      let currentCoverage = coverages[coverages.length - 1];
-      currentCoverage.num_last_issue_online = _getLastIssue(issueByVolume[volumeIndex - 1]);
-      currentCoverage.num_last_vol_online = issueByVolume[volumeIndex - 1].key;
-      currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(volumeIndex - 1,
-                                                                         hostPublicationDateByVolume,
-                                                                         publicationDateByVolume);
-      searchFor = START;
+    if (searchFor === START) {
+
+      if (issueByVolume[volumeIndex].docCount === 0) { continue;}
+
+      // Has documents but no issue or no consistency between volume doc count and issues doc count
+      if (
+        issueByVolume[volumeIndex]['host.issue'].buckets.length === 0
+        || issueByVolume[volumeIndex].docCount !== issuesDocCountSum
+      ) {
+        coverages.push({
+                         num_first_issue_online :_hasFirstIssue(issueByVolume, volumeIndex)?1:null,
+                         num_first_vol_online   : issueByVolume[volumeIndex].key,
+                         date_first_issue_online: _getDateFirstIssueByVolume(volumeIndex,
+                                                                             hostPublicationDateByVolume,
+                                                                             publicationDateByVolume),
+                         num_last_issue_online  : null,
+                         num_last_vol_online    : null,
+                         date_last_issue_online : null
+                       });
+
+        searchFor = END;
+        continue;
+      }
+    }
+
+    if (searchFor === END) {
+      // volume empty
+      if (issueByVolume[volumeIndex].docCount === 0) {
+        let currentCoverage = coverages[coverages.length - 1];
+        currentCoverage.num_last_issue_online = _getLastIssue(issueByVolume[volumeIndex - 1]);
+        currentCoverage.num_last_vol_online = issueByVolume[volumeIndex - 1].key;
+        currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(volumeIndex - 1,
+                                                                           hostPublicationDateByVolume,
+                                                                           publicationDateByVolume);
+        searchFor = START;
+        continue;
+      }
+
+      // Has documents but no issue or no consistency between volume doc count and issues doc count
+      if (issueByVolume[volumeIndex]['host.issue'].buckets.length === 0
+          || issueByVolume[volumeIndex].docCount !== issuesDocCountSum
+      ) {
+        if (volumeIndex === volumesLastIndex) {
+          let currentCoverage = coverages[coverages.length - 1];
+          currentCoverage.num_last_issue_online = null;
+          currentCoverage.num_last_vol_online = issueByVolume[volumeIndex].key;
+          currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(volumeIndex,
+                                                                             hostPublicationDateByVolume,
+                                                                             publicationDateByVolume);
+          searchFor = START; // only for logic
+        }
+
+        continue;
+      }
+
+      // no first issue
+      if (_.chain(issueByVolume[volumeIndex]['host.issue'].buckets)
+           .first()
+           .get('key')
+           .value() !== 1) {
+        let currentCoverage = coverages[coverages.length - 1];
+        currentCoverage.num_last_issue_online = _getLastIssue(issueByVolume[volumeIndex - 1]);
+        currentCoverage.num_last_vol_online = issueByVolume[volumeIndex - 1].key;
+        currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(volumeIndex - 1,
+                                                                           hostPublicationDateByVolume,
+                                                                           publicationDateByVolume);
+        searchFor = START;
+      }
     }
 
 
@@ -85,8 +134,8 @@ function buildCoverages (aggsIssueByVolume                       = [],
              issues          = issueByVolume[volumeIndex]['host.issue'].buckets,
              issuesSize      = issues.length,
              issuesLastIndex = issuesSize - 1;
-         issueIndex < issuesLastIndex;
-         ++issueIndex
+         issueIndex <= issuesLastIndex;
+         issueIndex += 1
     ) {
       if (searchFor === START) {
         if (issueByVolume[volumeIndex]['host.issue'].buckets[issueIndex].docCount > 0) {
@@ -102,9 +151,8 @@ function buildCoverages (aggsIssueByVolume                       = [],
                          });
 
           searchFor = END;
+          continue;
         }
-
-        continue;
       }
 
       if (searchFor === END) {
@@ -117,8 +165,20 @@ function buildCoverages (aggsIssueByVolume                       = [],
                                                                  hostPublicationDateByVolume,
                                                                  publicationDateByVolume);
           searchFor = START;
+          continue;
+        }
+
+        if (volumeIndex === volumesLastIndex && issueIndex === issuesLastIndex) {
+          let currentCoverage = coverages[coverages.length - 1];
+          currentCoverage.num_last_issue_online = issueByVolume[volumeIndex]['host.issue'].buckets[issueIndex].key;
+          currentCoverage.num_last_vol_online = issueByVolume[volumeIndex].key;
+          currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(volumeIndex,
+                                                                             hostPublicationDateByVolume,
+                                                                             publicationDateByVolume);
+
         }
       }
+
     }
 
   }
@@ -126,72 +186,16 @@ function buildCoverages (aggsIssueByVolume                       = [],
   return coverages;
 
 }
-//  for (let i = 0; i < issueByVolume.length; ++i) {
-//
-//    if (searchFor === START) {
-//      if (issueByVolume[i].docCount > 0) {
-//
-//        coverages.push({
-//                         num_first_issue_online : hasIssue ? _getFirstIssue(issueByVolume[i]) : null,
-//                         num_first_vol_online   : issueByVolume[i].key,
-//                         date_first_issue_online: _getDateFirstIssueByVolume(i,
-//                                                                             hostPublicationDateByVolume,
-//                                                                             publicationDateByVolume),
-//                         num_last_issue_online  : null,
-//                         num_last_vol_online    : null,
-//                         date_last_issue_online : null
-//                       });
-//
-//        searchFor = END;
-//
-//        if (i === issueByVolume.length - 1) {
-//          let currentCoverage = coverages[coverages.length - 1];
-//          currentCoverage.num_last_issue_online = hasIssue ? _getLastIssue(issueByVolume[i]) : null;
-//          currentCoverage.num_last_vol_online = currentCoverage.num_first_vol_online;
-//          currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(i,
-//                                                                             hostPublicationDateByVolume,
-//                                                                             publicationDateByVolume);
-//
-//        }
-//      }
-//
-//      continue;
-//    }
-//
-//    if (searchFor === END) {
-//      if (issueByVolume[i].docCount === 0) {
-//        let currentCoverage = coverages[coverages.length - 1];
-//        currentCoverage.num_last_issue_online = hasIssue ? _getLastIssue(issueByVolume[i - 1]) : null;
-//        currentCoverage.num_last_vol_online = issueByVolume[i - 1].key;
-//        currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(i - 1,
-//                                                                           hostPublicationDateByVolume,
-//                                                                           publicationDateByVolume);
-//        searchFor = START;
-//        continue;
-//      }
-//
-//
-//      if (i === issueByVolume.length - 1) {
-//        let currentCoverage = coverages[coverages.length - 1];
-//        currentCoverage.num_last_issue_online = hasIssue ? _getLastIssue(issueByVolume[i]) : null;
-//        currentCoverage.num_last_vol_online = issueByVolume[i].key;
-//        currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(i,
-//                                                                           hostPublicationDateByVolume,
-//                                                                           publicationDateByVolume);
-//
-//        searchFor = START;
-//        continue;
-//      }
-//
-//      continue;
-//    }
-//  }
-//
-//  return coverages;
-//
-//}
 
 // private helpers
+function _hasFirstIssue (issueByVolume, volumeIndex) {
+  return _.get(issueByVolume,
+               [volumeIndex,
+                'host.issue',
+                'buckets',
+                0,
+                'key']) ===1;
+}
 function _getDateLastIssueByVolume (index, hostPublicationDateByVolume, publicationDateByVolume) {
   return _.chain(hostPublicationDateByVolume[index]['host.publicationDate'].buckets)
           .last()

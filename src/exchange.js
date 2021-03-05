@@ -19,7 +19,6 @@ Error.stackTraceLimit = nodejs.stackTraceLimit || Error.stackTraceLimit;
 
 module.exports.exchange = exchange;
 
-
 /**
  * @param reviewUrl String the base url of Summary review usefull to build kbart title url
  * @param apiUrl String the base url of Istex api, used for querying data for kbart building
@@ -46,7 +45,7 @@ function exchange ({
     return s
       .map(
         reviewData => {
-          if (!duckTypeReviewData.once) duckTypeReviewData(reviewData);
+          if (!duckTypeReviewData.once) { duckTypeReviewData(reviewData);}
 
           let apiQuery;
           if (!reviewData._id) {
@@ -61,7 +60,8 @@ function exchange ({
             return;
           }
 
-          if (!~reviewData[model.istexQuery].indexOf('publicationDate')
+
+          if (reviewData[model.istexQuery].indexOf('publicationDate') > 0
               && doFrameByPublicationDate
               && reviewData[model.startDate]
               && reviewData[model.endDate]
@@ -78,7 +78,6 @@ function exchange ({
                                                            output: 'host,publicationDate,author',
                                                            facet : buildCoverages.issueByVolume
                                                          });
-
 
           const apiSearch = [
             apiSearchIssueByVolume,
@@ -149,7 +148,7 @@ function exchange ({
             };
           }))
       .errors((err, push) => {
-        doLogError && logError(err);
+        if (doLogError) { logError(err);}
         push(err);
       })
       .compact()
@@ -165,16 +164,17 @@ function exchange ({
 
       duckTypeReviewData.once = true;
 
-      if (keysDiff.length !== 0) throw new VError(
-        'Wrong data type, expecting that: %s, to includes this keys: %s, missing: %s',
-        JSON.stringify(data),
-        JSON.stringify(expectedKeys),
-        JSON.stringify(keysDiff)
-      );
+      if (keysDiff.length !== 0) {
+        throw new VError(
+          'Wrong data type, expecting that: %s, to includes this keys: %s, missing: %s',
+          JSON.stringify(data),
+          JSON.stringify(expectedKeys),
+          JSON.stringify(keysDiff)
+        );
+      }
     }
   };
 }
-
 
 
 /* private helpers */

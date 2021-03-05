@@ -70,6 +70,36 @@ describe('Exchange', function() {
 
   });
 
+  it(
+    'Should compute exchange for ark:/67375/8Q1-WLNVPD2M-D while ignoring missmatch docu count between volume and sum of issues',
+    function(done) {
+
+      const maxSize  = 50,
+            parallel = 20
+      ;
+
+      const expectedTimeout = getExpectedTimeout({maxSize, parallel});
+
+      this.timeout(expectedTimeout);
+      console.info('Expected timeout: ', expectedTimeout);
+
+      const onceFinished = onceDone(done);
+      const exchanger = exchange({parallel, doWarn: true, doLogError: false});
+      let results = [];
+      return findDocumentsBy({uri: 'ark:/67375/8Q1-WLNVPD2M-D', maxSize})
+        .through(exchanger)
+        .through(toKbart())
+        .stopOnError(onceFinished)
+        .doto((kbartLine) => {results.push(kbartLine);})
+        .stopOnError(onceFinished)
+        .done(() => {
+          results.join('').should.equal(expectedResult.exchangeIgnoreMissmatch);
+          onceFinished();
+        })
+        ;
+
+    });
+
   it('Should compute basics Kbart frame even with no results, for ark:/67375/8Q1-Q29MRC5R-R', function(done) {
 
     const maxSize  = 50,
@@ -107,42 +137,17 @@ describe('Exchange', function() {
 
     const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
     const onceFinished = onceDone(done);
-    let result = '';
+    let results = [];
 
     findDocumentsBy({
-                      uri: 'ark:/67375/8Q1-C8X9G1TH-L' //'ark:/67375/8Q1-SVH028SG-5'
+                      uri: 'ark:/67375/8Q1-C8X9G1TH-L'
                     })
       .through(exchanger)
       .through(toKbart())
-      .doto((kbartLine) => {result += kbartLine;})
+      .doto((kbartLine) => {results.push(kbartLine);})
       .stopOnError(onceFinished)
       .done(() => {
-        result.should.equal(expectedResult.toKbartMissingHeadIssue);
-        onceFinished();
-      })
-    ;
-  });
-
-  it('Should stream headers and kbart lines and expose missing middle issue coverage ', function(done) {
-
-
-    const expectedTimeout = getExpectedTimeout();
-    this.timeout(expectedTimeout);
-    console.info('Expected timeout: ', expectedTimeout);
-
-    const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
-    const onceFinished = onceDone(done);
-    let result = '';
-
-    findDocumentsBy({
-                      uri: 'ark:/67375/8Q1-WLNVPD2M-D' //'ark:/67375/8Q1-SVH028SG-5'
-                    })
-      .through(exchanger)
-      .through(toKbart())
-      .doto((kbartLine) => {result += kbartLine;})
-      .stopOnError(onceFinished)
-      .done(() => {
-        result.should.equal(expectedResult.toKbartMissingMiddleIssue);
+        results.join('').should.equal(expectedResult.toKbartMissingHeadIssue);
         onceFinished();
       })
     ;
@@ -157,17 +162,17 @@ describe('Exchange', function() {
 
     const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
     const onceFinished = onceDone(done);
-    let result = '';
+    let results = [];
 
     findDocumentsBy({
                       uri: 'ark:/67375/8Q1-32DSDVT8-D'
                     })
       .through(exchanger)
       .through(toKbart())
-      .doto((kbartLine) => {result += kbartLine;})
+      .doto((kbartLine) => {results.push(kbartLine);})
       .stopOnError(onceFinished)
       .done(() => {
-        result.should.equal(expectedResult.toKbart);
+        results.join('').should.equal(expectedResult.toKbart);
         onceFinished();
       })
     ;
@@ -183,17 +188,17 @@ describe('Exchange', function() {
 
       const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
       const onceFinished = onceDone(done);
-      let result = '';
+      let results = [];
 
       findDocumentsBy({
                         uri: 'ark:/67375/8Q1-32DSDVT8-D'
                       })
         .through(exchanger)
         .through(toXmlHoldings())
-        .doto((xmlHolding) => {result += xmlHolding;})
+        .doto((xmlHolding) => {results.push(xmlHolding);})
         .stopOnError(onceFinished)
         .done(() => {
-          result.should.equal(expectedResult.toXmlHoldings);
+          results.join('').should.equal(expectedResult.toXmlHoldings);
           onceFinished();
         })
       ;
@@ -226,48 +231,6 @@ describe('Exchange', function() {
         });
     });
   });
-  // holdings generator one-shot
-  describe.skip('writeXmlHoldings', function() {
-    it('Should write xmlHoldings files', function(done) {
-      let n = 30;
-      let corpusName = 'ecco';//Object.keys(corpusType)[n];
-      const corpus = {
-        name: corpusName,
-        type: corpusType[corpusName],
-        size: 400000
-      };
-
-      console.dir(corpus);
-
-      const expectedTimeout = getExpectedTimeout({maxSize: corpus.size});
-      this.timeout(expectedTimeout);
-      console.info('Expected timeout: ', expectedTimeout);
-
-      const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
-      const onceFinished = onceDone(done);
-
-      let result = '';
-      let count = 0;
-      findDocumentsBy({
-                        corpus : corpus.name,
-                        maxSize: corpus.size
-                      })
-        .through(exchanger)
-        .tap(() => {console.log(++count);})
-        .through(toXmlHoldings())
-        .through(writeXmlHoldings({corpusName: corpus.name, type: corpus.type}))
-        .doto((xmlHolding) => {result += xmlHolding;})
-        .stopOnError(onceFinished)
-        .done(() => {
-          fs.stat(`./test/output/google-scholar/institutional_holdings_RSL_FRANCE_ISTEXJOURNALS-0.xml`,
-                  (err) => {
-                    return onceFinished(err);
-                  });
-        })
-      ;
-
-    });
-  });
 
   describe('writeXmlHoldings', function() {
     it('Should write xmlHoldings files', function(done) {
@@ -283,7 +246,6 @@ describe('Exchange', function() {
       const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
       const onceFinished = onceDone(done);
 
-      let result = '';
       findDocumentsBy({
                         corpus : corpus.name,
                         maxSize: corpus.size
@@ -291,7 +253,6 @@ describe('Exchange', function() {
         .through(exchanger)
         .through(toXmlHoldings())
         .through(writeXmlHoldings({corpusName: corpus.name, type: corpus.type}))
-        .doto((xmlHolding) => {result += xmlHolding;})
         .stopOnError(onceFinished)
         .done(() => {
           fs.stat(`./test/output/google-scholar/institutional_holdings_RSL_FRANCE_ISTEXJOURNALS-0.xml`,
@@ -304,39 +265,6 @@ describe('Exchange', function() {
     });
   });
 
-  // one shot
-  describe.skip('buildInstitutionalLinks', function() {
-    it('Should return valid InstitutionalLinks XML', function(done) {
-      const contacts = ['Claude NIEDERLENDER <claude.niederlender@inist.fr>',
-                        'Jean-Joffrey PARENTIN <jean-joffrey.parentin@inist.fr>']
-      ;
-
-      fs.readdir(xmlHoldings.outputPath, (err, files) => {
-        if (err) return done(err);
-
-        const holdingsFiles = _.chain(files)
-                               .filter((file) => file.startsWith('institutional_holdings'))
-                               .map((file) => path.join('google-scholar', file))
-                               .value()
-        ;
-        const xml = buildInstitutionalLinks({contacts, holdingsFiles});
-        validateXMLWithDTD(xml)
-          .then(() => {
-            fs.outputFile(path.join(xmlHoldings.outputPath,
-                                    `institutional_links_istex.xml`),
-                          xml,
-                          {flag: 'w', encoding: 'utf-8'},
-                          (err) => {
-                            if (err) throw err;
-                          });
-          })
-          .then(done)
-          .catch(done)
-        ;
-      });
-    });
-  });
-
   describe('buildInstitutionalLinks', function() {
     it('Should return valid InstitutionalLinks XML', function(done) {
       const contacts = ['Bob Geldof <bob.geldof@inist.fr>', 'John Doe <john.doe@inist.fr>'],
@@ -344,7 +272,7 @@ describe('Exchange', function() {
       ;
 
       fs.readdir(xmlHoldings.outputPath, (err, files) => {
-        if (err) return done(err);
+        if (err) { return done(err);}
 
         const holdingsFiles = _.chain(files)
                                .filter((file) => file.startsWith('institutional_holdings'))

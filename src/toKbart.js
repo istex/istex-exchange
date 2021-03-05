@@ -65,7 +65,7 @@ function _exchangeDataToJsKbart ({coverages, reviewData, apiResult, reviewUrl}) 
     online_identifier              : reviewData[model.type] === SERIAL ? reviewData[model.eIssn] : reviewData[model.eIsbn],
     title_url                      : titleUrl.toString(),
     first_author                   : reviewData[model.type] === MONOGRAPH && reviewData[model.contributor] || null,
-    title_id                       : reviewData[model.titleId],
+    title_id                       : reviewData[model.uri],
     notes                          : _tagFollowedBy(reviewData[model.followedBy]),
     parent_publication_title_id    : _findTitleId(reviewData[model.parentPublicationTitleId]),
     preceding_publication_title_id : _findTitleId(reviewData[model.precededBy]),
@@ -79,7 +79,7 @@ function _exchangeDataToJsKbart ({coverages, reviewData, apiResult, reviewUrl}) 
 
 function _tagFollowedBy (value) {
   let titleId;
-  if (!(titleId = _findTitleId(value))) return '';
+  if (!(titleId = _findTitleId(value))){ return '';}
   return `followed by: ${titleId}`;
 }
 
