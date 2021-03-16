@@ -3,7 +3,7 @@
 const convert         = require('xml-js'),
       hl              = require('highland'),
       bytes           = require('bytes'),
-      {xmlHoldings}   = require('config-component').get(module),
+      {xmlHoldings}   = require('@istex/config-component').get(module),
       {model, SERIAL} = require('./reviewModel')
 ;
 

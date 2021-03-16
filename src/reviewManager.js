@@ -1,7 +1,7 @@
 'use strict';
 
 const reviewClient           = require('./client').getReviewClient(),
-      {istex, app}           = require('config-component').get(module),
+      {istex, app}           = require('@istex/config-component').get(module),
       {model}                = require('./reviewModel'),
       {URL, URLSearchParams} = require('url'),
       {pickBy}               = require('lodash'),

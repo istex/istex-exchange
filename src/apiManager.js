@@ -1,7 +1,7 @@
 'use strict';
 
 const apiClient              = require('./client').getApiClient(),
-      {istex, app}           = require('config-component').get(module),
+      {istex, app}           = require('@istex/config-component').get(module),
       {URL, URLSearchParams} = require('url'),
       {omitBy, isNil}        = require('lodash'),
       hl                     = require('highland')

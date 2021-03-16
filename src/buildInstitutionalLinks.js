@@ -1,7 +1,7 @@
 'use strict';
 
 const convert    = require('xml-js'),
-      {xmlLinks} = require('config-component').get(module),
+      {xmlLinks} = require('@istex/config-component').get(module),
       {URL}      = require('url')
 ;
 

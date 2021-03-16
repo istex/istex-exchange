@@ -1,6 +1,6 @@
 'use strict';
 
-const {istex, nodejs, app}   = require('config-component').get(module),
+const {istex, nodejs, app}   = require('@istex/config-component').get(module),
       hl                     = require('highland'),
       _                      = require('lodash'),
       {logWarning, logError} = require('../helpers/logger'),

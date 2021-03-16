@@ -1,7 +1,7 @@
 'use strict';
 
 
-const {istex} = require('config-component').get(module),
+const {istex} = require('@istex/config-component').get(module),
       got     = require('got'),
       _       = require('lodash'),
       VError  = require('verror')

@@ -2,7 +2,7 @@
 
 const should                         = require('should'),
       {validateXMLWithDTD}           = require('validate-with-xmllint'),
-      {testSuit, istex, xmlHoldings} = require('config-component').get(module),
+      {testSuit, istex, xmlHoldings} = require('@istex/config-component').get(module),
       fs                             = require('fs-extra'),
       path                           = require('path'),
       _                              = require('lodash'),
@@ -71,7 +71,7 @@ describe('Exchange', function() {
   });
 
   it(
-    'Should compute exchange for ark:/67375/8Q1-WLNVPD2M-D while ignoring missmatch docu count between volume and sum of issues',
+    'Should compute exchange for ark:/67375/8Q1-WLNVPD2M-D while ignoring missmatch doc count between volume and sum of issues',
     function(done) {
 
       const maxSize  = 50,

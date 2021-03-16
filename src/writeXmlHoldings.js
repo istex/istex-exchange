@@ -1,7 +1,7 @@
 'use strict';
 
 const hl            = require('highland'),
-      {xmlHoldings} = require('config-component').get(module),
+      {xmlHoldings} = require('@istex/config-component').get(module),
       fs            = require('fs-extra'),
       path          = require('path')
 ;
