@@ -20,7 +20,7 @@ module.exports = {
     'publisher_name',
     'publication_type',
     'date_monograph_published_print',
-    'date_monograp_pûblished_online',
+    'date_monograph_published_online',
     'monograph_volume',
     'monograph_edition',
     'first_editor',

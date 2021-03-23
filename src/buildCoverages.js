@@ -108,7 +108,7 @@ function buildCoverages (aggsIssueByVolume                       = [],
           currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(volumeIndex,
                                                                              hostPublicationDateByVolume,
                                                                              publicationDateByVolume);
-          searchFor = START; // only for logic
+          searchFor = START; // only for logic coz its the last iteration
         }
 
         continue;
