@@ -75,7 +75,9 @@ function _exchangeDataToXmlHoldingsItem ({
                                            reviewData: {
                                              [model.title]: title,
                                              [model.issn] : issn,
+                                             [model.eIssn]: eIssn,
                                              [model.isbn] : isbn,
+                                             [model.eIsbn]: eIsbn,
                                              [model.type] : type
                                            }
                                          },
@@ -108,7 +110,7 @@ function _exchangeDataToXmlHoldingsItem ({
           }
   ;
 
-  if (issn) {
+  if (issn || eIssn) {
     item.elements.push(
       {
         type    : 'element',
@@ -116,14 +118,14 @@ function _exchangeDataToXmlHoldingsItem ({
         elements: [
           {
             type: 'text',
-            text: issn
+            text: issn || eIssn
           }
         ]
 
       });
   }
 
-  if (isbn) {
+  if (isbn || eIsbn) {
     item.elements.push(
       {
         type    : 'element',
@@ -131,7 +133,7 @@ function _exchangeDataToXmlHoldingsItem ({
         elements: [
           {
             type: 'text',
-            text: isbn
+            text: isbn || eIsbn
           }
         ]
 
@@ -154,7 +156,7 @@ function _exchangeDataToXmlHoldingsItem ({
         const coverage = _buildCoverageElement();
         coverage.elements.push(_buildFromElement({year, volume, issue}));
 
-        if (_coverageContainsToValue(rest)) coverage.elements.push(_buildToElement(rest));
+        if (_coverageContainsToValue(rest)) { coverage.elements.push(_buildToElement(rest));}
 
         item.elements.push(coverage);
       });
