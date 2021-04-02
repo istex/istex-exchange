@@ -4,9 +4,7 @@
   "description": "Helpers and nodeJs core module to stream Data Istex Objects into kbart or xml holdings",
   "main": "index.js",
   "scripts": {
-    "start": "export NODE_ENV=production; view-config; node index.js --no-colors",
     "test": "export NODE_ENV=test; view-config; mocha --recursive",
-    "dev": "export NODE_ENV=development; view-config; node index.js",
     "config:view": "view-config"
   },
   "keywords": [
@@ -14,10 +12,17 @@
     "KBART",
     "institutional-holdings"
   ],
+  "engines": {
+    "node": ">=10"
+  },
   "author": "jj618",
   "license": "CeCILL",
+  "bugs": {
+    "url": "https://github.com/istex/istex-exchange/issues"
+  },
+  "homepage": "https://github.com/istex/istex-exchange#readme",
   "dependencies": {
-    "@istex/config-component": "^1.3.0",
+    "@istex/config-component": "^1.4.0",
     "bytes": "^3.1.0",
     "color": "^3.1.2",
     "colors": "^1.4.0",
@@ -33,10 +38,10 @@
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
-    "validate-with-xmllint": "^1.2.0",
     "chai": "^4.2.0",
     "mocha": "^6.2.2",
     "nyc": "^14.1.1",
-    "should": "^13.2.3"
+    "should": "^13.2.3",
+    "validate-with-xmllint": "^1.2.0"
   }
 }
