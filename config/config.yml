@@ -36,14 +36,14 @@ istex:
 
 xmlHoldings:
   spaces: 0 # Number of spaces to be used for indenting XML output. Passing characters like ' ' or '\t' are also accepted.
-  dtd: http://scholar.google.com/scholar/institutional_holdings.dtd
+  dtd: https://scholar.google.com/scholar/institutional_holdings.dtd
   maxXmlHoldingsSize: 1MB # limit of the file size by holdings, @see https://github.com/istex/istex-google-scholar/blob/master/resources/reference/institutional_holdings.xml
   # Supported units : b, kb, mb, gb, tb, pb
   outputPath: ./output/google-scholar
 
 xmlLinks:
-  dtd: http://scholar.google.com/scholar/institutional_links.dtd
-  baseUrl: https://content-delivery.istex.fr
+  dtd: https://scholar.google.com/scholar/institutional_links.dtd
+  baseUrl: https://google-scholar.delivery.istex.fr/
 
 nodejs:
   stackTraceLimit: 40
