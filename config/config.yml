@@ -43,7 +43,7 @@ xmlHoldings:
 
 xmlLinks:
   dtd: https://scholar.google.com/scholar/institutional_links.dtd
-  baseUrl: https://google-scholar.delivery.istex.fr/
+  baseUrl: https://google-scholar.delivery.istex.fr
 
 nodejs:
   stackTraceLimit: 40

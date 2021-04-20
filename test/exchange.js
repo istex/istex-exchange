@@ -273,10 +273,8 @@ describe('Exchange', function() {
 
       fs.readdir(xmlHoldings.outputPath, (err, files) => {
         if (err) { return done(err);}
-
         const holdingsFiles = _.chain(files)
                                .filter((file) => file.startsWith('institutional_holdings'))
-                               .map((file) => path.join('google-scholar', file))
                                .value()
         ;
         const xml = buildInstitutionalLinks({contacts, holdingsFiles, dtd});
