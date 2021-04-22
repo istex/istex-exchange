@@ -64,7 +64,7 @@ function _exchangeDataToJsKbart ({coverages, reviewData, apiResult, reviewUrl}) 
     print_identifier               : reviewData[model.type] === SERIAL ? reviewData[model.issn] : reviewData[model.isbn],
     online_identifier              : reviewData[model.type] === SERIAL ? reviewData[model.eIssn] : reviewData[model.eIsbn],
     title_url                      : titleUrl.toString(),
-    first_author                   : reviewData[model.type] === MONOGRAPH && reviewData[model.contributor] || null,
+    first_author                   : _takeFirstAuthor(reviewData),
     title_id                       : reviewData[model.uri],
     notes                          : _tagFollowedBy(reviewData[model.followedBy]),
     parent_publication_title_id    : _findTitleId(reviewData[model.parentPublicationTitleId]),
@@ -77,13 +77,19 @@ function _exchangeDataToJsKbart ({coverages, reviewData, apiResult, reviewUrl}) 
   };
 }
 
+function _takeFirstAuthor (reviewData) {
+  if (reviewData[model.type] !== MONOGRAPH || _.isEmpty(reviewData[model.contributor])) {return;}
+
+  return reviewData[model.contributor].split(',')[0];
+}
+
 function _tagFollowedBy (value) {
   let titleId;
-  if (!(titleId = _findTitleId(value))){ return '';}
+  if (!(titleId = _findTitleId(value))) { return '';}
   return `followed by: ${titleId}`;
 }
 
 function _findTitleId (value) {
-  if (typeof value !== 'string' || value === '' || !value.startsWith(syndicationFromModel)) return null;
+  if (typeof value !== 'string' || value === '' || !value.startsWith(syndicationFromModel)) { return null;}
   return value.slice(-issnShape.length);
 }

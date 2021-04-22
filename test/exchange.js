@@ -100,6 +100,36 @@ describe('Exchange', function() {
 
     });
 
+  it(
+    'Should compute kbart with only the first authors',
+    function(done) {
+
+      const maxSize  = 50,
+            parallel = 20
+      ;
+
+      const expectedTimeout = getExpectedTimeout({maxSize, parallel});
+
+      this.timeout(expectedTimeout);
+      console.info('Expected timeout: ', expectedTimeout);
+
+      const onceFinished = onceDone(done);
+      const exchanger = exchange({parallel, doWarn: true, doLogError: false});
+      let results = [];
+      return findDocumentsBy({uri: 'ark:/67375/8Q1-Z3L6FBTB-K', maxSize})
+        .through(exchanger)
+        .through(toKbart())
+        .stopOnError(onceFinished)
+        .doto((kbartLine) => {results.push(kbartLine);})
+        .stopOnError(onceFinished)
+        .done(() => {
+          results.join('').should.equal(expectedResult.toKbartTakeOnlyFirstAuthor);
+          onceFinished();
+        })
+        ;
+
+    });
+
   it('Should compute basics Kbart frame even with no results, for ark:/67375/8Q1-Q29MRC5R-R', function(done) {
 
     const maxSize  = 50,
