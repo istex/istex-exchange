@@ -28,14 +28,12 @@ function getMonographVolume ({ [model.type]: type }, apiResult) {
  * @param apiResult Object
  */
 function getDateMonographPublishedPrint ({ [model.type]: type, [model.isbn]: isbn, [model.eIsbn]: eIsbn }, apiResult) {
-  if (type !== MONOGRAPH || !isbn) return null;
-  let monographDate = _.get(apiResult, 'hits.0.publicationDate', null);
+  if (type !== MONOGRAPH) return null;
 
-  // If we can't find publicationDate and the doc doesn't seems to have been published electonically, we check
-  // the host publicationDate
-  if (!monographDate && !eIsbn) {
-    monographDate = _.get(apiResult, 'hits.0.host.publicationDate', null);
-  }
+  const monographDate = _.get(apiResult,
+    'hits.0.host.publicationDate',
+    _.get(apiResult, 'hits.0.publicationDate', null),
+  );
 
   return monographDate;
 }
@@ -45,7 +43,8 @@ function getDateMonographPublishedPrint ({ [model.type]: type, [model.isbn]: isb
  * @param apiResult Object
  */
 function getDateMonographPublishedOnline ({ [model.type]: type, [model.eIsbn]: eIsbn }, apiResult) {
-  if (type !== MONOGRAPH || !eIsbn) return null;
+  if (type !== MONOGRAPH) return null;
+
   const monographDate = _.get(apiResult,
     'hits.0.host.publicationDate',
     _.get(apiResult, 'hits.0.publicationDate', null),

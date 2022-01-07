@@ -194,6 +194,29 @@ describe('Exchange', function () {
     ;
   });
 
+  it('Should have monograph with publicationDate', function (done) {
+    const expectedTimeout = getExpectedTimeout();
+    this.timeout(expectedTimeout);
+    console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
+
+    const exchanger = exchange({ doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr' });
+    const onceFinished = onceDone(done);
+    const results = [];
+
+    findDocumentsBy({
+      uri: 'ark:/67375/8Q1-01FBR9BW-D',
+    })
+      .through(exchanger)
+      .through(toKbart())
+      .doto((kbartLine) => { results.push(kbartLine); })
+      .stopOnError(onceFinished)
+      .done(() => {
+        results.join('').should.equal(expectedResult.kbartMonographPublicationDate);
+        onceFinished();
+      })
+    ;
+  });
+
   describe('toXmlHoldings', function () {
     it('Should stream xmlHoldings', function (done) {
       const expectedTimeout = getExpectedTimeout();
