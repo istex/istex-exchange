@@ -4,7 +4,8 @@ const convert         = require('xml-js'),
       hl              = require('highland'),
       bytes           = require('bytes'),
       {xmlHoldings}   = require('@istex/config-component').get(module),
-      {model, SERIAL} = require('./reviewModel')
+      {model, SERIAL} = require('./reviewModel'),
+      {URL}     = require('url')
 ;
 
 /*
@@ -78,15 +79,22 @@ function _exchangeDataToXmlHoldingsItem ({
                                              [model.eIssn]: eIssn,
                                              [model.isbn] : isbn,
                                              [model.eIsbn]: eIsbn,
-                                             [model.type] : type
-                                           }
+                                             [model.type] : type,
+                                             [model.uri]: uri
+                                           },
+                                            reviewUrl
                                          },
                                          {spaces = xmlHoldings.spaces} = {}) {
+  const titleUrl = new URL(reviewUrl);
+  titleUrl.pathname = uri;
+  const comment = `Detailled coverage can be found at: ${titleUrl.toString()}`;
 
   const js2xmlOptions = {
     spaces
   };
+
   const root = {elements: []};
+
   const item =
           {
             type      : 'element',
@@ -154,9 +162,12 @@ function _exchangeDataToXmlHoldingsItem ({
         if (!year) return;
 
         const coverage = _buildCoverageElement();
+
         coverage.elements.push(_buildFromElement({year, volume, issue}));
 
         if (_coverageContainsToValue(rest)) { coverage.elements.push(_buildToElement(rest));}
+
+       coverage.elements.push( _buildCommentElement(comment));
 
         item.elements.push(coverage);
       });
@@ -179,6 +190,20 @@ function _getXmlHoldingsStart ({dtd = xmlHoldings.dtd} = {}) {
 
 function _getXmlHoldingsEnd () {
   return '</institutional_holdings>';
+}
+
+function _buildCommentElement (comment) {
+  return {
+    type: 'element',
+    name: 'comment',
+    elements: [
+      {
+        type: 'text',
+        text: comment,
+      },
+    ],
+
+  };
 }
 
 function _buildCoverageElement () {

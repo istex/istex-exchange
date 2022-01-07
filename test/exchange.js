@@ -26,7 +26,7 @@ describe('Exchange', function() {
     const expectedTimeout = getExpectedTimeout({maxSize, parallel});
 
     this.timeout(expectedTimeout);
-    console.info('Expected timeout: ', expectedTimeout);
+    console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
 
     const onceFinished = onceDone(done);
     const exchanger = exchange({parallel, doWarn: true, doLogError: false});
@@ -53,7 +53,7 @@ describe('Exchange', function() {
     const expectedTimeout = getExpectedTimeout({maxSize, parallel});
 
     this.timeout(expectedTimeout);
-    console.info('Expected timeout: ', expectedTimeout);
+    console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
 
     const onceFinished = onceDone(done);
     const exchanger = exchange({parallel, doWarn: true, doLogError: false});
@@ -81,7 +81,7 @@ describe('Exchange', function() {
       const expectedTimeout = getExpectedTimeout({maxSize, parallel});
 
       this.timeout(expectedTimeout);
-      console.info('Expected timeout: ', expectedTimeout);
+      console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
 
       const onceFinished = onceDone(done);
       const exchanger = exchange({parallel, doWarn: true, doLogError: false});
@@ -111,7 +111,7 @@ describe('Exchange', function() {
       const expectedTimeout = getExpectedTimeout({maxSize, parallel});
 
       this.timeout(expectedTimeout);
-      console.info('Expected timeout: ', expectedTimeout);
+      console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
 
       const onceFinished = onceDone(done);
       const exchanger = exchange({parallel, doWarn: true, doLogError: false});
@@ -139,7 +139,7 @@ describe('Exchange', function() {
     const expectedTimeout = getExpectedTimeout({maxSize, parallel});
 
     this.timeout(expectedTimeout);
-    console.info('Expected timeout: ', expectedTimeout);
+    console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
 
     const onceFinished = onceDone(done);
     const exchanger = exchange({parallel, doWarn: true, doLogError: false});
@@ -163,7 +163,7 @@ describe('Exchange', function() {
 
     const expectedTimeout = getExpectedTimeout();
     this.timeout(expectedTimeout);
-    console.info('Expected timeout: ', expectedTimeout);
+    console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
 
     const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
     const onceFinished = onceDone(done);
@@ -188,7 +188,7 @@ describe('Exchange', function() {
 
     const expectedTimeout = getExpectedTimeout();
     this.timeout(expectedTimeout);
-    console.info('Expected timeout: ', expectedTimeout);
+    console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
 
     const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
     const onceFinished = onceDone(done);
@@ -214,7 +214,7 @@ describe('Exchange', function() {
 
       const expectedTimeout = getExpectedTimeout();
       this.timeout(expectedTimeout);
-      console.info('Expected timeout: ', expectedTimeout);
+      console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
 
       const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
       const onceFinished = onceDone(done);
@@ -239,7 +239,7 @@ describe('Exchange', function() {
 
       const expectedTimeout = getExpectedTimeout();
       this.timeout(expectedTimeout);
-      console.info('Expected timeout: ', expectedTimeout);
+      console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
 
       const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
       const onceFinished = onceDone(done);
@@ -271,7 +271,7 @@ describe('Exchange', function() {
 
       const expectedTimeout = getExpectedTimeout({maxSize: corpus.size});
       this.timeout(expectedTimeout);
-      console.info('Expected timeout: ', expectedTimeout);
+      console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
 
       const exchanger = exchange({doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr'});
       const onceFinished = onceDone(done);

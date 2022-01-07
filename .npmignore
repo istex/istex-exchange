@@ -6,6 +6,7 @@
 .idea
 test/
 .jshintrc
+.eslintrc.js
 .editorConfig
 
 ## Config component  ##
