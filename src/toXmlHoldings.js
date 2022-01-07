@@ -1,11 +1,11 @@
 'use strict';
 
-const convert         = require('xml-js'),
-      hl              = require('highland'),
-      bytes           = require('bytes'),
-      {xmlHoldings}   = require('@istex/config-component').get(module),
-      {model, SERIAL} = require('./reviewModel'),
-      {URL}     = require('url')
+const convert = require('xml-js');
+const hl = require('highland');
+const bytes = require('bytes');
+const { xmlHoldings } = require('@istex/config-component').get(module);
+const { model, SERIAL } = require('./reviewModel');
+const { URL } = require('url')
 ;
 
 /*
@@ -14,11 +14,11 @@ const convert         = require('xml-js'),
  * @see https://stackoverflow.com/questions/58996045/internal-dtd-validation-using-notepad
  * @see https://stackoverflow.com/questions/5578645/what-does-the-standalone-directive-mean-in-xml
  */
-module.exports.toXmlHoldings = function({sizeLimit, spaces, dtd} = {}) {
-  return function(s) {
-    return s.map((exchangeData) => {return _exchangeDataToXmlHoldingsItem(exchangeData, {spaces});})
-            .consume(_wrapItemsBySizeLimit({sizeLimit, prepend: _getXmlHoldingsStart({dtd})}))
-      ;
+module.exports.toXmlHoldings = function ({ sizeLimit, spaces, dtd } = {}) {
+  return function (s) {
+    return s.map((exchangeData) => { return _exchangeDataToXmlHoldingsItem(exchangeData, { spaces }); })
+      .consume(_wrapItemsBySizeLimit({ sizeLimit, prepend: _getXmlHoldingsStart({ dtd }) }))
+    ;
   };
 };
 
@@ -27,10 +27,10 @@ module.exports.toXmlHoldings = function({sizeLimit, spaces, dtd} = {}) {
 //
 
 function _wrapItemsBySizeLimit ({
-                                  sizeLimit = bytes(String(xmlHoldings.maxXmlHoldingsSize)),
-                                  prepend = _getXmlHoldingsStart(),
-                                  append = _getXmlHoldingsEnd()
-                                } = {}) {
+  sizeLimit = bytes(String(xmlHoldings.maxXmlHoldingsSize)),
+  prepend = _getXmlHoldingsStart(),
+  append = _getXmlHoldingsEnd(),
+} = {}) {
   let doPrepend = true;
   let totalLength = 0;
   let doBatch = true;
@@ -39,19 +39,16 @@ function _wrapItemsBySizeLimit ({
 
   sizeLimit = Math.max(sizeLimit - Buffer.byteLength(prepend, 'utf8') - Buffer.byteLength(append, 'utf8'), 1);
 
-
   return function _batch (err, x, push, next) {
     if (err) {
       push(err);
       next();
-    }
-    else if (x === hl.nil) {
+    } else if (x === hl.nil) {
       if (!doPrepend) {
         push(null, append);
       }
       push(null, x);
-    }
-    else {
+    } else {
       if (doBatch && !doPrepend && (totalLength + Buffer.byteLength(x, 'utf8')) >= sizeLimit) {
         push(null, append);
         doPrepend = true;
@@ -72,63 +69,63 @@ function _wrapItemsBySizeLimit ({
 }
 
 function _exchangeDataToXmlHoldingsItem ({
-                                           coverages,
-                                           reviewData: {
-                                             [model.title]: title,
-                                             [model.issn] : issn,
-                                             [model.eIssn]: eIssn,
-                                             [model.isbn] : isbn,
-                                             [model.eIsbn]: eIsbn,
-                                             [model.type] : type,
-                                             [model.uri]: uri
-                                           },
-                                            reviewUrl
-                                         },
-                                         {spaces = xmlHoldings.spaces} = {}) {
+  coverages,
+  reviewData: {
+    [model.title]: title,
+    [model.issn]: issn,
+    [model.eIssn]: eIssn,
+    [model.isbn]: isbn,
+    [model.eIsbn]: eIsbn,
+    [model.type]: type,
+    [model.uri]: uri,
+  },
+  reviewUrl,
+},
+{ spaces = xmlHoldings.spaces } = {}) {
   const titleUrl = new URL(reviewUrl);
   titleUrl.pathname = uri;
   const comment = `Detailled coverage can be found at: ${titleUrl.toString()}`;
 
   const js2xmlOptions = {
-    spaces
+    spaces,
   };
 
-  const root = {elements: []};
+  const root = { elements: [] };
 
   const item =
           {
-            type      : 'element',
-            name      : 'item',
+            type: 'element',
+            name: 'item',
             attributes: {
-              type: 'electronic'
+              type: 'electronic',
             },
-            elements  : [
+            elements: [
               {
-                type    : 'element',
-                name    : 'title',
+                type: 'element',
+                name: 'title',
                 elements: [
                   {
                     type: 'text',
-                    text: title
-                  }
-                ]
+                    text: title,
+                  },
+                ],
 
-              }
-            ]
+              },
+            ],
           }
   ;
 
   if (issn || eIssn) {
     item.elements.push(
       {
-        type    : 'element',
-        name    : 'issn',
+        type: 'element',
+        name: 'issn',
         elements: [
           {
             type: 'text',
-            text: issn || eIssn
-          }
-        ]
+            text: issn || eIssn,
+          },
+        ],
 
       });
   }
@@ -136,14 +133,14 @@ function _exchangeDataToXmlHoldingsItem ({
   if (isbn || eIsbn) {
     item.elements.push(
       {
-        type    : 'element',
-        name    : 'isbn',
+        type: 'element',
+        name: 'isbn',
         elements: [
           {
             type: 'text',
-            text: isbn || eIsbn
-          }
-        ]
+            text: isbn || eIsbn,
+          },
+        ],
 
       });
   }
@@ -152,38 +149,36 @@ function _exchangeDataToXmlHoldingsItem ({
   if (type === SERIAL) {
     coverages
       .forEach(({
-                  num_first_issue_online : issue,
-                  num_first_vol_online   : volume,
-                  date_first_issue_online: year,
-                  ...rest
-                }) => {
-
+        num_first_issue_online: issue,
+        num_first_vol_online: volume,
+        date_first_issue_online: year,
+        ...rest
+      }) => {
         // the element <from><year> is mandatory
         if (!year) return;
 
         const coverage = _buildCoverageElement();
 
-        coverage.elements.push(_buildFromElement({year, volume, issue}));
+        coverage.elements.push(_buildFromElement({ year, volume, issue }));
 
-        if (_coverageContainsToValue(rest)) { coverage.elements.push(_buildToElement(rest));}
+        if (_coverageContainsToValue(rest)) { coverage.elements.push(_buildToElement(rest)); }
 
-       coverage.elements.push( _buildCommentElement(comment));
+        coverage.elements.push(_buildCommentElement(comment));
 
         item.elements.push(coverage);
       });
   }
-
 
   root.elements.push(item);
 
   return convert.js2xml(root, js2xmlOptions);
 }
 
-function _getXmlHoldingsStart ({dtd = xmlHoldings.dtd} = {}) {
-  const prolog       = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-                       + '<!DOCTYPE institutional_holdings PUBLIC "-//GOOGLE//Institutional Holdings 1.0//EN" '
-                       + `"${dtd}">`,
-        rootStartTag = '<institutional_holdings>';
+function _getXmlHoldingsStart ({ dtd = xmlHoldings.dtd } = {}) {
+  const prolog = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+                       '<!DOCTYPE institutional_holdings PUBLIC "-//GOOGLE//Institutional Holdings 1.0//EN" ' +
+                       `"${dtd}">`;
+  const rootStartTag = '<institutional_holdings>';
 
   return prolog + rootStartTag;
 }
@@ -208,18 +203,17 @@ function _buildCommentElement (comment) {
 
 function _buildCoverageElement () {
   return {
-    type    : 'element',
-    name    : 'coverage',
-    elements: []
+    type: 'element',
+    name: 'coverage',
+    elements: [],
   };
 }
 
-
-function _buildFromElement ({year, volume, issue}) {
+function _buildFromElement ({ year, volume, issue }) {
   const from = {
-    type    : 'element',
-    name    : 'from',
-    elements: []
+    type: 'element',
+    name: 'from',
+    elements: [],
   };
 
   // year is mandatory
@@ -230,25 +224,23 @@ function _buildFromElement ({year, volume, issue}) {
   return from;
 }
 
-
 function _coverageContainsToValue ({
-                                     num_last_issue_online,
-                                     num_last_vol_online,
-                                     date_last_issue_online
-                                   }) {
-  return date_last_issue_online != null || num_last_vol_online != null || num_last_issue_online != null;
+  num_last_issue_online: issue,
+  num_last_vol_online: volume,
+  date_last_issue_online: year,
+}) {
+  return issue != null || volume != null || year != null;
 }
 
-
 function _buildToElement ({
-                            num_last_issue_online : issue,
-                            num_last_vol_online   : volume,
-                            date_last_issue_online: year
-                          }) {
+  num_last_issue_online: issue,
+  num_last_vol_online: volume,
+  date_last_issue_online: year,
+}) {
   const to = {
-    type    : 'element',
-    name    : 'to',
-    elements: []
+    type: 'element',
+    name: 'to',
+    elements: [],
   };
 
   if (year != null) to.elements.push(_buildTextElement('year', year));
@@ -260,13 +252,13 @@ function _buildToElement ({
 
 function _buildTextElement (name, text) {
   return {
-    type    : 'element',
+    type: 'element',
     name,
     elements: [
       {
         type: 'text',
-        text
-      }
-    ]
+        text,
+      },
+    ],
   };
 }

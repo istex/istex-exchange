@@ -34,11 +34,11 @@ function profile (fn, doProfile) {
 }
 
 function report () {
-  return `Benchmark function: ${this.fn.name || 'NA'}\n`
-         + `Total : ${this.executionTime / NS_PER_MS} ms\n`
-         + `Iterations: ${this.iteration}\n`
-         + `Average : ${this.executionTime / this.iteration / NS_PER_MS} mS\n`
-         + `Shortest : ${Number(this.shortestIteration) / NS_PER_MS} ms\n`
-         + `Longest : ${Number(this.longestIteration) / NS_PER_MS} mS\n`
-    ;
+  return `Benchmark function: ${this.fn.name || 'NA'}\n` +
+         `Total : ${this.executionTime / NS_PER_MS} ms\n` +
+         `Iterations: ${this.iteration}\n` +
+         `Average : ${this.executionTime / this.iteration / NS_PER_MS} mS\n` +
+         `Shortest : ${Number(this.shortestIteration) / NS_PER_MS} ms\n` +
+         `Longest : ${Number(this.longestIteration) / NS_PER_MS} mS\n`
+  ;
 }

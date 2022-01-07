@@ -26,6 +26,6 @@ module.exports = {
     'first_editor',
     'parent_publication_title_id',
     'preceding_publication_title_id',
-    'access_type'
-  ]
+    'access_type',
+  ],
 };

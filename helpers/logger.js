@@ -1,12 +1,11 @@
 'use strict';
 
 const
-  _           = require('lodash'),
-  trans       = require('./trans'),
-  colors      = require('./myColors'), // jshint ignore:line
-  packageJson = require('../package.json')
+  _ = require('lodash');
+const trans = require('./trans');
+const colors = require('./myColors'); // jshint ignore:line
+const packageJson = require('../package.json')
 ;
-
 
 const appName = _.get(packageJson, 'name', 'myApp');
 
@@ -19,29 +18,29 @@ module.exports.logSuccess = logSuccess;
 function logError (err) {
   const message = typeof err === 'string' ? arguments : [err.message || '', err];
   console.error('%s [%s] [%s] %s',
-                appName.bold.danger,
-                'Error',
-                _getDate(),
-                ...(_.map(message, trans))
+    appName.bold.danger,
+    'Error',
+    _getDate(),
+    ...(_.map(message, trans)),
   )
   ;
 }
 
 function logSuccess () {
   console.info('%s [%s] [%s] %s',
-               appName.bold.success,
-               'Success',
-               _getDate(),
-               ...(_.map(arguments, trans))
+    appName.bold.success,
+    'Success',
+    _getDate(),
+    ...(_.map(arguments, trans)),
   );
 }
 
 function logInfo () {
   console.info('%s [%s] [%s] %s',
-               appName.bold.info,
-               'Info',
-               _getDate(),
-               ...(_.map(arguments, trans))
+    appName.bold.info,
+    'Info',
+    _getDate(),
+    ...(_.map(arguments, trans)),
   );
 }
 
@@ -49,23 +48,23 @@ function logWarning (err) {
   if ((process.env.NODE_ENV === 'test' && logWarning.doWarn !== true) || logWarning.doWarn === false) return;
   const message = typeof err === 'string' ? arguments : [err.message || '', err];
   console.warn('%s [%s] [%s] %s',
-               appName.bold.warning,
-               'Warning',
-               _getDate(),
-               ...(_.map(message, trans))
+    appName.bold.warning,
+    'Warning',
+    _getDate(),
+    ...(_.map(message, trans)),
   );
 }
 
 function logDebug () {
   if (['test', 'production'].includes(process.env.NODE_ENV)) return;
   console.info('%s [%s] [%s] %s',
-               appName.bold.primary,
-               'Debug',
-               _getDate(),
-               ...(_.map(arguments, trans))
+    appName.bold.primary,
+    'Debug',
+    _getDate(),
+    ...(_.map(arguments, trans)),
   );
 }
 
 function _getDate () {
-  return new Date(Date.now()).toLocaleString(undefined, {timeZoneName: 'short'});
+  return new Date(Date.now()).toLocaleString(undefined, { timeZoneName: 'short' });
 }

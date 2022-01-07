@@ -185,5 +185,4 @@ function _formatReviewDataWarning (message, reviewData) {
          `_id: ${_.get(reviewData, '_id', 'UNSET').toString().warning}, ` +
          `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, ` +
          `query: ${_.get(reviewData, '_query', 'UNSET').muted}`;
-
 }
