@@ -39,8 +39,8 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "mocha": "^6.2.2",
-    "nyc": "^14.1.1",
+    "mocha": "^9.1.3",
+    "nyc": "^15.1.0",
     "semistandard": "^16.0.1",
     "should": "^13.2.3",
     "validate-with-xmllint": "^1.2.0"
