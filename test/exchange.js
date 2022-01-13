@@ -171,6 +171,52 @@ describe('Exchange', function () {
     ;
   });
 
+  it('Should handle end of volumes iteration properly', function (done) {
+    const expectedTimeout = getExpectedTimeout();
+    this.timeout(expectedTimeout);
+    console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
+
+    const exchanger = exchange({ doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr' });
+    const onceFinished = onceDone(done);
+    const results = [];
+
+    findDocumentsBy({
+      uri:  'ark:/67375/8Q1-306BGSMB-X',
+    })
+      .through(exchanger)
+      .through(toKbart())
+      .doto((kbartLine) => { results.push(kbartLine); })
+      .stopOnError(onceFinished)
+      .done(() => {
+        results.join('').should.equal(expectedResult.toKbartEndOfVolumesIteration);
+        onceFinished();
+      })
+    ;
+  });
+
+  it('Should handle end of issues iteration properly', function (done) {
+    const expectedTimeout = getExpectedTimeout();
+    this.timeout(expectedTimeout);
+    console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
+
+    const exchanger = exchange({ doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr' });
+    const onceFinished = onceDone(done);
+    const results = [];
+
+    findDocumentsBy({
+      uri: 'ark:/67375/8Q1-959X46LT-G',
+    })
+      .through(exchanger)
+      .through(toKbart())
+      .doto((kbartLine) => { results.push(kbartLine); })
+      .stopOnError(onceFinished)
+      .done(() => {
+        results.join('').should.equal(expectedResult.toKbartEndOfIssuesIteration);
+        onceFinished();
+      })
+    ;
+  });
+
   it('Should stream headers and kbart lines', function (done) {
     const expectedTimeout = getExpectedTimeout();
     this.timeout(expectedTimeout);

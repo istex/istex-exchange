@@ -73,6 +73,14 @@ function buildCoverages (
           date_last_issue_online: null,
         });
 
+        if (volumeIndex === volumesLastIndex) {
+          const currentCoverage = coverages[coverages.length - 1];
+          currentCoverage.num_last_issue_online = null; // in this case we can't be sure of the issues numeration
+          currentCoverage.num_last_vol_online = issueByVolume[volumeIndex].key;
+          currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(volumeIndex,
+            hostPublicationDateByVolume,
+            publicationDateByVolume);
+        }
         searchFor = END;
         continue;
       }
@@ -97,7 +105,7 @@ function buildCoverages (
       ) {
         if (volumeIndex === volumesLastIndex) {
           const currentCoverage = coverages[coverages.length - 1];
-          currentCoverage.num_last_issue_online = null;
+          currentCoverage.num_last_issue_online = null; // in this case we can't be sure of the issues numeration
           currentCoverage.num_last_vol_online = issueByVolume[volumeIndex].key;
           currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(volumeIndex,
             hostPublicationDateByVolume,
@@ -143,6 +151,14 @@ function buildCoverages (
             date_last_issue_online: null,
           });
 
+          if (volumeIndex === volumesLastIndex && issueIndex === issuesLastIndex) {
+            const currentCoverage = coverages[coverages.length - 1];
+            currentCoverage.num_last_issue_online = issueByVolume[volumeIndex]['host.issue'].buckets[issueIndex].key;
+            currentCoverage.num_last_vol_online = issueByVolume[volumeIndex].key;
+            currentCoverage.date_last_issue_online = _getDateLastIssueByVolume(volumeIndex,
+              hostPublicationDateByVolume,
+              publicationDateByVolume);
+          }
           searchFor = END;
           continue;
         }
