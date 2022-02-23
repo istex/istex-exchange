@@ -181,7 +181,7 @@ describe('Exchange', function () {
     const results = [];
 
     findDocumentsBy({
-      uri:  'ark:/67375/8Q1-306BGSMB-X',
+      uri: 'ark:/67375/8Q1-306BGSMB-X',
     })
       .through(exchanger)
       .through(toKbart())

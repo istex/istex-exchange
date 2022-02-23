@@ -84,6 +84,7 @@ function exchange ({
           // we needs a second and third request for multiple aggregations
           // @todo add hadoc route in the api
           const apiSearchHostPublicationDateByVolumeAndIssue = findDocumentsBy({
+            apiUrl,
             apiQuery,
             size: 0,
             output: '',
@@ -91,6 +92,7 @@ function exchange ({
           });
 
           const apiSearchPublicationDateByVolumeAndIssue = findDocumentsBy({
+            apiUrl,
             apiQuery,
             size: 0,
             output: '',

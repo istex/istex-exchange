@@ -51,7 +51,7 @@ function getDateMonographPublishedOnline ({ [model.type]: type, [model.eIsbn]: e
   );
 
   // a bit of guessing, probably not the best way
-  if (!monographDate.startsWith('20') && !monographDate.startsWith('21')) return null;
+  if (!monographDate?.startsWith?.('20') && !monographDate?.startsWith?.('21')) return null;
 
   return monographDate;
 }

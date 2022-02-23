@@ -26,6 +26,7 @@ istex:
 
     # timeout may be Object or Number, @see https://www.npmjs.com/package/got#timeout
     timeout:
+     socket: 60000
      response: 10000 # ms
 
   review:
