@@ -36,7 +36,7 @@ function exchange ({
 } = {}) {
   logWarning.doWarn = doWarn;
 
-  return function (s) {
+  function exchanger (s) {
     return s.map(
       reviewData => {
         if (!duckTypeReviewData.once) { duckTypeReviewData(reviewData); }
@@ -44,25 +44,25 @@ function exchange ({
         let apiQuery;
         if (!reviewData._id) {
           logWarning(_formatReviewDataWarning(
-            'Invalid Summary review data object, missing _id. ', reviewData));
+            'Invalid Review data object, missing _id. ', reviewData));
           return;
         }
 
         if (!(apiQuery = reviewData[model.istexQuery])) {
           logWarning(_formatReviewDataWarning(
-            'Invalid Summary review data object, missing istexQuery. ',
+            'Invalid Review data object, missing istexQuery. ',
             reviewData));
 
           return;
         }
 
         if (reviewData[model.istexQuery].indexOf('publicationDate') > 0 &&
-             doFrameByPublicationDate &&
-            reviewData[model.startDate] &&
-            reviewData[model.endDate]
+              doFrameByPublicationDate &&
+              reviewData[model.startDate] &&
+              reviewData[model.endDate]
         ) {
           apiQuery += ` AND publicationDate:[${reviewData[model.startDate] || '*'}` +
-                       `TO ${reviewData[model.endDate] || '*'}]`;
+                        `TO ${reviewData[model.endDate] || '*'}]`;
         }
 
         reviewData._query = apiQuery;
@@ -113,11 +113,27 @@ function exchange ({
           ([apiResult, reviewData, apiResultHostPublicationDateByVolumeAndIssue, apiResultPublicationDateByVolumeAndIssue]) => {
             if (apiResult.total === 0) {
               logWarning(_formatReviewDataWarning(
-                'No Istex API result for Summary review data object, ',
+                'No Istex API result for the Review data object, ',
                 reviewData));
 
               return;
             }
+
+            if (reviewData[model.type] === 'serial' && (
+              apiResult.total !== apiResultHostPublicationDateByVolumeAndIssue.total ||
+              apiResult.total !== apiResultPublicationDateByVolumeAndIssue.total)) {
+              logWarning(_formatReviewDataWarning(
+                'There a difference in the total result of the Istex api for the Review data object, ',
+                reviewData,
+                JSON.stringify([
+                  apiResult,
+                  reviewData,
+                  apiResultHostPublicationDateByVolumeAndIssue,
+                  apiResultPublicationDateByVolumeAndIssue])));
+
+              return;
+            }
+
             if (reviewData[model.type] === 'monograph' &&
                 _.get(apiResult.hits, '0.host.genre') === 'book' &&
                 _.get(apiResult.aggregations, ['host.volume', 'buckets'],
@@ -131,7 +147,7 @@ function exchange ({
             }
             if (!reviewData[model.uri]) {
               logWarning(_formatReviewDataWarning(
-                'Missing Uri in Summary review data object id, ', reviewData));
+                'Missing Uri in the Review data object id, ', reviewData));
             }
             const coverages = reviewData[model.type] === 'serial'
               ? buildCoverages(apiResult.aggregations,
@@ -167,7 +183,9 @@ function exchange ({
         );
       }
     }
-  };
+  }
+
+  return exchanger;
 }
 
 /* private helpers */
@@ -182,9 +200,10 @@ function _try (fn) {
   };
 }
 
-function _formatReviewDataWarning (message, reviewData) {
+function _formatReviewDataWarning (message, reviewData, info = '') {
   return `${message}` +
          `_id: ${_.get(reviewData, '_id', 'UNSET').toString().warning}, ` +
          `ark: ${_.get(reviewData, 'uri', 'UNSET').warning}, ` +
-         `query: ${_.get(reviewData, '_query', 'UNSET').muted}`;
+         `query: ${_.get(reviewData, '_query', 'UNSET').muted}` +
+         info;
 }
