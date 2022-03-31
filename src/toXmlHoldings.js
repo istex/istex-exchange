@@ -4,9 +4,12 @@ const convert = require('xml-js');
 const hl = require('highland');
 const bytes = require('bytes');
 const { xmlHoldings } = require('@istex/config-component').get(module);
-const { model, SERIAL } = require('./reviewModel');
-const { URL } = require('url')
-;
+const { model, SERIAL, MONOGRAPH } = require('./reviewModel');
+const { URL } = require('url');
+const {
+  getMonographVolume,
+  getDateMonographPublishedPrint,
+} = require('./monographHelpers');
 
 /*
  * @see https://github.com/istex/istex-google-scholar
@@ -17,8 +20,7 @@ const { URL } = require('url')
 module.exports.toXmlHoldings = function ({ sizeLimit, spaces, dtd } = {}) {
   return function (s) {
     return s.map((exchangeData) => { return _exchangeDataToXmlHoldingsItem(exchangeData, { spaces }); })
-      .consume(_wrapItemsBySizeLimit({ sizeLimit, prepend: _getXmlHoldingsStart({ dtd }) }))
-    ;
+      .consume(_wrapItemsBySizeLimit({ sizeLimit, prepend: _getXmlHoldingsStart({ dtd }) }));
   };
 };
 
@@ -68,20 +70,22 @@ function _wrapItemsBySizeLimit ({
   };
 }
 
-function _exchangeDataToXmlHoldingsItem ({
-  coverages,
-  reviewData: {
-    [model.title]: title,
-    [model.issn]: issn,
-    [model.eIssn]: eIssn,
-    [model.isbn]: isbn,
-    [model.eIsbn]: eIsbn,
-    [model.type]: type,
-    [model.uri]: uri,
+function _exchangeDataToXmlHoldingsItem (
+  {
+    coverages,
+    reviewData: {
+      [model.title]: title,
+      [model.issn]: issn,
+      [model.eIssn]: eIssn,
+      [model.isbn]: isbn,
+      [model.eIsbn]: eIsbn,
+      [model.type]: type,
+      [model.uri]: uri,
+    },
+    apiResult,
+    reviewUrl,
   },
-  reviewUrl,
-},
-{ spaces = xmlHoldings.spaces } = {}) {
+  { spaces = xmlHoldings.spaces } = {}) {
   const titleUrl = new URL(reviewUrl);
   titleUrl.pathname = uri;
   const comment = `Detailled coverage can be found at: ${titleUrl.toString()}`;
@@ -93,26 +97,26 @@ function _exchangeDataToXmlHoldingsItem ({
   const root = { elements: [] };
 
   const item =
-          {
-            type: 'element',
-            name: 'item',
-            attributes: {
-              type: 'electronic',
+    {
+      type: 'element',
+      name: 'item',
+      attributes: {
+        type: 'electronic',
+      },
+      elements: [
+        {
+          type: 'element',
+          name: 'title',
+          elements: [
+            {
+              type: 'text',
+              text: title,
             },
-            elements: [
-              {
-                type: 'element',
-                name: 'title',
-                elements: [
-                  {
-                    type: 'text',
-                    text: title,
-                  },
-                ],
+          ],
 
-              },
-            ],
-          }
+        },
+      ],
+    }
   ;
 
   if (issn || eIssn) {
@@ -145,7 +149,6 @@ function _exchangeDataToXmlHoldingsItem ({
       });
   }
 
-  // Serial coverage
   if (type === SERIAL) {
     coverages
       .forEach(({
@@ -169,6 +172,26 @@ function _exchangeDataToXmlHoldingsItem ({
       });
   }
 
+  if (type === MONOGRAPH) {
+    const coverage = _buildCoverageElement();
+    const year = getDateMonographPublishedPrint({
+      [model.isbn]: isbn,
+      [model.eIsbn]: eIsbn,
+      [model.type]: type,
+    }, apiResult);
+    const volume = getMonographVolume({
+      [model.isbn]: isbn,
+      [model.eIsbn]: eIsbn,
+      [model.type]: type,
+    }, apiResult);
+
+    if (year) {
+      coverage.elements.push(_buildFromElement({ year, volume }));
+    }
+    coverage.elements.push(_buildCommentElement(comment));
+    item.elements.push(coverage);
+  }
+
   root.elements.push(item);
 
   return convert.js2xml(root, js2xmlOptions);
@@ -176,8 +199,8 @@ function _exchangeDataToXmlHoldingsItem ({
 
 function _getXmlHoldingsStart ({ dtd = xmlHoldings.dtd } = {}) {
   const prolog = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-                       '<!DOCTYPE institutional_holdings PUBLIC "-//GOOGLE//Institutional Holdings 1.0//EN" ' +
-                       `"${dtd}">`;
+                 '<!DOCTYPE institutional_holdings PUBLIC "-//GOOGLE//Institutional Holdings 1.0//EN" ' +
+                 `"${dtd}">`;
   const rootStartTag = '<institutional_holdings>';
 
   return prolog + rootStartTag;

@@ -287,6 +287,31 @@ describe('Exchange', function () {
       ;
     });
 
+    it('Should stream xmlHoldings Monograph', function (done) {
+      const expectedTimeout = getExpectedTimeout();
+      this.timeout(expectedTimeout);
+      console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
+
+      const exchanger = exchange({ doWarn: true, reviewUrl: 'https://revue-sommaire.data.istex.fr' });
+      const onceFinished = onceDone(done);
+      const results = [];
+
+      findDocumentsBy({
+        uri: 'ark:/67375/8Q1-01CQS9SR-R',
+      })
+        .through(exchanger)
+        .through(toXmlHoldings())
+        .doto((xmlHolding) => { results.push(xmlHolding); })
+        .stopOnError(onceFinished)
+        .done(() => {
+          results.join('').should.equal(expectedResult.toXmlHoldingsMonograph);
+          validateXMLWithDTD(results.join(''))
+            .then(onceFinished)
+            .catch(onceFinished);
+        })
+      ;
+    });
+
     it('Should produce valid xmlHoldings', function (done) {
       const expectedTimeout = getExpectedTimeout();
       this.timeout(expectedTimeout);

@@ -123,7 +123,7 @@ function exchange ({
               apiResult.total !== apiResultHostPublicationDateByVolumeAndIssue.total ||
               apiResult.total !== apiResultPublicationDateByVolumeAndIssue.total)) {
               logWarning(_formatReviewDataWarning(
-                'There a difference in the total result of the Istex api for the Review data object, ',
+                `There a difference between the total result of the Istex api [${apiResult.total}] and the aggregation total, for the Review data object, `,
                 reviewData,
                 JSON.stringify([
                   apiResult,
