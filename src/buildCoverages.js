@@ -4,7 +4,7 @@ const _ = require('lodash');
 module.exports = buildCoverages;
 
 // public
-buildCoverages.issueByVolume = 'host.volume[*-*:1]>host.issue[*-*:1]';
+buildCoverages.issueByVolume = 'host.issue[*-*:1]>host.volume[*-*:1],host.volume[*-*:1]>host.issue[*-*:1]';
 buildCoverages.hostPublicationDateByVolumeAndIssue = 'host.volume[*-*:1]>host.publicationDate[*-*:1],host.issue[*-*:1]>host.publicationDate[*-*:1]';
 buildCoverages.publicationDateByVolumeAndIssue = 'host.volume[*-*:1]>publicationDate[*-*:1],host.issue[*-*:1]>publicationDate[*-*:1]';
 
@@ -13,17 +13,31 @@ function buildCoverages (
   aggsHostPublicationDateByVolumeAndIssue = [],
   aggsPublicationDateByVolumeAndIssue = []) {
   const issueByVolume = _.get(aggsIssueByVolume, ['host.volume', 'buckets'], []);
+  const volumeByIssue = _.get(aggsIssueByVolume, ['host.issue', 'buckets'], []);
   const hostPublicationDateByIssue = _.get(aggsHostPublicationDateByVolumeAndIssue, ['host.issue', 'buckets'], []);
   const hostPublicationDateByVolume = _.get(aggsHostPublicationDateByVolumeAndIssue, ['host.volume', 'buckets'], []);
   const publicationDateByIssue = _.get(aggsPublicationDateByVolumeAndIssue, ['host.issue', 'buckets'], []);
-  const publicationDateByVolume = _.get(aggsPublicationDateByVolumeAndIssue, ['host.volume', 'buckets'], [])
-  ;
+  const publicationDateByVolume = _.get(aggsPublicationDateByVolumeAndIssue, ['host.volume', 'buckets'], []);
   const hasIssue = hostPublicationDateByIssue.length > 0;
-  const hasVolume = issueByVolume.length > 0
-  ;
+  const hasVolume = issueByVolume.length > 0;
   if (!hasIssue && !hasVolume) { return []; }
 
+  // console.dir(   aggsHostPublicationDateByVolumeAndIssue, {depth:10})
+  // console.dir(  aggsPublicationDateByVolumeAndIssue, {depth:10})
+
+  function _computeIssueNumbering (volumeByIssueBuckets) {
+    const CYCLICAL = 'CYCLICAL';
+    const LINEAR = 'LINEAR';
+    const UND = 'UND';
+    if (volumeByIssueBuckets.some((bucket) => {
+      return _.get(bucket, ['host.volume', 'keyCount']) > 1;
+    })) return CYCLICAL;
+
+    return UND;
+  }
+
   const coverages = [];
+  const isIssueCyclical = _computeIssueNumbering(volumeByIssue) === 'CYCLICAL';
 
   // only issues
   if (hasIssue && !hasVolume) {
@@ -120,7 +134,7 @@ function buildCoverages (
       if (_.chain(issueByVolume[volumeIndex]['host.issue'].buckets)
         .first()
         .get('key')
-        .value() !== 1) {
+        .value() !== 1 && isIssueCyclical) {
         const currentCoverage = coverages[coverages.length - 1];
         currentCoverage.num_last_issue_online = _getLastIssue(issueByVolume[volumeIndex - 1]);
         currentCoverage.num_last_vol_online = issueByVolume[volumeIndex - 1].key;

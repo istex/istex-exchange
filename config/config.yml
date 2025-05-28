@@ -11,7 +11,7 @@ app:
   doWarn: false
   doLogError: false
   doFrameByPublicationDate: false
-  parallel: 15 # nb of reviewData that are processed in parallel, Warning: diminishing returns due to istex.api bottleneck.
+  parallel: 5 # nb of reviewData that are processed in parallel, Warning: diminishing returns due to istex.api bottleneck.
 
 testSuit:
   expectedAvgTimeByIteration: 300 # ms

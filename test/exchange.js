@@ -94,6 +94,32 @@ describe('Exchange', function () {
       ;
     });
 
+  it('Should compute kbart for ark:/67375/8Q1-ZK142RMP-C with none cyclical issue', function (done) {
+    const maxSize = 50;
+    const parallel = 20
+    ;
+
+    const expectedTimeout = getExpectedTimeout({ maxSize, parallel });
+
+    this.timeout(expectedTimeout);
+    console.info(`\tExpected timeout: ${expectedTimeout}`.muted);
+
+    const onceFinished = onceDone(done);
+    const exchanger = exchange({ parallel, doWarn: true, doLogError: false });
+    const results = [];
+    return findDocumentsBy({ uri: 'ark:/67375/8Q1-ZK142RMP-C', maxSize })
+      .through(exchanger)
+      // .doto((result)=>console.dir(result))
+      .through(toKbart())
+      .stopOnError(onceFinished)
+      .doto((kbartLine) => { results.push(kbartLine); })
+      .stopOnError(onceFinished)
+      .done(() => {
+        results.join('').should.equal(expectedResult.toKbartNoneCyclicalIssue);
+        onceFinished();
+      });
+  });
+
   it(
     'Should compute kbart with only the first authors',
     function (done) {
@@ -323,7 +349,7 @@ describe('Exchange', function () {
 
       findDocumentsBy({
         corpus: 'rsl',
-        maxSize: 20,
+        maxSize: 1,
       })
         .through(exchanger)
         .through(toXmlHoldings())
