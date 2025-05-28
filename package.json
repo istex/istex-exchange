@@ -1,6 +1,6 @@
 {
   "name": "@istex/istex-exchange",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Helpers and nodeJs core module to stream Data Istex Objects into kbart or xml holdings",
   "main": "index.js",
   "scripts": {
