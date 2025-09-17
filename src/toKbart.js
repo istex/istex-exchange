@@ -64,7 +64,7 @@ function _exchangeDataToJsKbart ({ coverages, reviewData, apiResult, reviewUrl }
     title_url: titleUrl.toString(),
     first_author: _takeFirstAuthor(reviewData),
     title_id: reviewData[model.uri],
-    notes: _tagFollowedBy(reviewData[model.followedBy]),
+    notes: buildNotes(reviewData),
     parent_publication_title_id: _findTitleId(reviewData[model.parentPublicationTitleId]),
     preceding_publication_title_id: _findTitleId(reviewData[model.precededBy]),
     access_type: reviewData[model.rights],
@@ -79,6 +79,17 @@ function _takeFirstAuthor (reviewData) {
   if (reviewData[model.type] !== MONOGRAPH || _.isEmpty(reviewData[model.contributor])) { return; }
 
   return reviewData[model.contributor].split(',')[0];
+}
+
+function buildNotes (reviewData) {
+  const notes = [];
+  notes.push(_tagFollowedBy(reviewData[model.type]));
+  notes.push(_tagCorpusName(reviewData[model.corpus]));
+  return _.compact(notes).join();
+}
+
+function _tagCorpusName (corpus = 'und') {
+  return `corpus: ${corpus}`;
 }
 
 function _tagFollowedBy (value) {

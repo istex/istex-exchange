@@ -83,11 +83,13 @@ describe('Exchange', function () {
       const results = [];
       return findDocumentsBy({ uri: 'ark:/67375/8Q1-WLNVPD2M-D', maxSize })
         .through(exchanger)
+        // .doto((result)=>console.dir(result))
         .through(toKbart())
         .stopOnError(onceFinished)
         .doto((kbartLine) => { results.push(kbartLine); })
         .stopOnError(onceFinished)
         .done(() => {
+          // console.dir(results.join(''))
           results.join('').should.equal(expectedResult.exchangeIgnoreMissmatch);
           onceFinished();
         })
@@ -115,6 +117,7 @@ describe('Exchange', function () {
       .doto((kbartLine) => { results.push(kbartLine); })
       .stopOnError(onceFinished)
       .done(() => {
+        // console.dir(results.join(''))
         results.join('').should.equal(expectedResult.toKbartNoneCyclicalIssue);
         onceFinished();
       });
