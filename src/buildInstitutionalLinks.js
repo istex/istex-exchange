@@ -27,7 +27,7 @@ const institution = '<institution lang="en">ISTEX</institution>';
 const keywords = '<keywords>ISTEX France</keywords>';
 const electronicLinkLabel = '<electronic_link_label lang="en">[PDF] ISTEX</electronic_link_label>';
 const otherLinkLabel = '<other_link_label lang="en"/>';
-const openUrlBase = '<openurl_base>https://view.istex.fr/document/openurl?auth=ip,fede&amp;</openurl_base>';
+const openUrlBase = '<openurl_base>https://api.istex.fr/document/openurl?auth=ip,fede&amp;</openurl_base>';
 const openUrlOption = '<openurl_option>pmid</openurl_option>' +
                       '<openurl_option>doi</openurl_option>' +
                       '<openurl_option>book-title</openurl_option>' +
